@@ -4,9 +4,8 @@ import { IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator';
 export class UpdateRoleDto {
   @IsOptional()
   @IsNumber()
-  modified_on?:number;
+  modified_on?: number;
 
-  
   @ApiProperty({
     example: 'Admin',
     description: 'Name of the role',
@@ -14,6 +13,4 @@ export class UpdateRoleDto {
   @IsString()
   @IsNotEmpty()
   name: string;
-
- 
 }

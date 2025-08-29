@@ -1,12 +1,12 @@
 [
-    {
-        "name": "John Doe",
-        "age": 30,
-        "country": "USA"
-    },
-    {
-        "name": "Jane Doe",
-        "age": 25,
-        "country": "Canada"
-    }
+  {
+    "name": "John Doe",
+    "age": 30,
+    "country": "USA"
+  },
+  {
+    "name": "Jane Doe",
+    "age": 25,
+    "country": "Canada"
+  }
 ]

@@ -21,9 +21,8 @@ const config = {
   synchronize: false,
   schema: 'main',
   migrationsRun: false,
-  logging:true
+  logging: true,
 };
-
 
 export default registerAs('typeorm', () => config);
 export const connectionSource = new DataSource(config as DataSourceOptions);

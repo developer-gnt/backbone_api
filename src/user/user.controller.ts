@@ -1,4 +1,12 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+} from '@nestjs/common';
 import { UserService } from './user.service';
 import { CreateUserDto } from 'src/auth/dto/create-user.dto';
 import { UpdateUserDto } from 'src/auth/dto/update-user.dto';
@@ -8,7 +16,7 @@ import { PermissionKey } from 'src/packages/authorization/permission-key.enum';
 @Controller('user')
 export class UserController {
   constructor(private readonly userService: UserService) {}
-  
+
   @Post()
   @Authorize([PermissionKey.CreateUser])
   create(@Body() createUserDto: CreateUserDto) {

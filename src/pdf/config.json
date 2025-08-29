@@ -1,29 +1,63 @@
 {
-    "title": "NATURE BLISS CHILDREN HOSPITAL LLP",
-    "hospitalDetails": {
-      "address": "DHOLKAWALA BLDG NO.58, MOHAMMED ALI ROAD, MUMBAI-400003",
-      "mobile": "9702954433"
+  "title": "NATURE BLISS CHILDREN HOSPITAL LLP",
+  "hospitalDetails": {
+    "address": "DHOLKAWALA BLDG NO.58, MOHAMMED ALI ROAD, MUMBAI-400003",
+    "mobile": "9702954433"
+  },
+  "patientDetails": {
+    "date": "05-01-2025",
+    "name": "BHARATI MAKWANA",
+    "billNo": "001",
+    "ward": "DC / 101",
+    "doctor": "",
+    "sex": "",
+    "age": "",
+    "admissionDate": "",
+    "dischargeDate": "01-05-2025"
+  },
+  "charges": [
+    {
+      "description": "IPD REGISTRATION",
+      "charges": 500,
+      "quantity": 1,
+      "amount": 500
     },
-    "patientDetails": {
-      "date": "05-01-2025",
-      "name": "BHARATI MAKWANA",
-      "billNo": "001",
-      "ward": "DC / 101",
-      "doctor": "",
-      "sex": "",
-      "age": "",
-      "admissionDate": "",
-      "dischargeDate": "01-05-2025"
+    {
+      "description": "BED CHARGES",
+      "charges": 1450,
+      "quantity": 4,
+      "amount": 5800
     },
-    "charges": [
-      { "description": "IPD REGISTRATION", "charges": 500, "quantity": 1, "amount": 500 },
-      { "description": "BED CHARGES", "charges": 1450, "quantity": 4, "amount": 5800 },
-      { "description": "NURSING CARES", "charges": 650, "quantity": 4, "amount": 2600 },
-      { "description": "MEDICINE & CONSUMABLES", "charges": 14150, "quantity": 1, "amount": 14150 },
-      { "description": "CONSULTANT VISIT", "charges": 1000, "quantity": 4, "amount": 4000 },
-      { "description": "OXYGEN CHARGE", "charges": 850, "quantity": 1, "amount": 850 },
-      { "description": "BIOMEDICAL WASTE (WARD)", "charges": 150, "quantity": 4, "amount": 600 }
-    ],
-    "totalAmount": 28500
-  }
-  
+    {
+      "description": "NURSING CARES",
+      "charges": 650,
+      "quantity": 4,
+      "amount": 2600
+    },
+    {
+      "description": "MEDICINE & CONSUMABLES",
+      "charges": 14150,
+      "quantity": 1,
+      "amount": 14150
+    },
+    {
+      "description": "CONSULTANT VISIT",
+      "charges": 1000,
+      "quantity": 4,
+      "amount": 4000
+    },
+    {
+      "description": "OXYGEN CHARGE",
+      "charges": 850,
+      "quantity": 1,
+      "amount": 850
+    },
+    {
+      "description": "BIOMEDICAL WASTE (WARD)",
+      "charges": 150,
+      "quantity": 4,
+      "amount": 600
+    }
+  ],
+  "totalAmount": 28500
+}

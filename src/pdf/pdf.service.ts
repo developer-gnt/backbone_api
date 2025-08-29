@@ -23,7 +23,7 @@ export class PdfService {
     const logoPath = join('src/images/', 'tathastu-black-logo.png'); // Adjust path as needed
     const logoImage = readFileSync(logoPath);
     const logo = await pdfDoc.embedPng(logoImage);
-    
+
     // Calculate logo dimensions (maintaining aspect ratio)
     const logoWidth = 200; // Adjust as needed
     const logoHeight = (logo.height / logo.width) * logoWidth;
@@ -36,21 +36,56 @@ export class PdfService {
       height: logoHeight,
     });
     // Draw title
-    page.drawText(this.config.title, { x: logoWidth - 50, y: yPosition, size: 16, font });
+    page.drawText(this.config.title, {
+      x: logoWidth - 50,
+      y: yPosition,
+      size: 16,
+      font,
+    });
 
     // Draw hospital details
     yPosition -= 20;
-    page.drawText(this.config.hospitalDetails.address, { x: logoWidth - 50, y: yPosition, size: 10, font });
+    page.drawText(this.config.hospitalDetails.address, {
+      x: logoWidth - 50,
+      y: yPosition,
+      size: 10,
+      font,
+    });
     yPosition -= 20;
-    page.drawText(`Mobile No: ${this.config.hospitalDetails.mobile}`, { x: logoWidth - 50, y: yPosition, size: 10, font });
+    page.drawText(`Mobile No: ${this.config.hospitalDetails.mobile}`, {
+      x: logoWidth - 50,
+      y: yPosition,
+      size: 10,
+      font,
+    });
 
     // Draw patient details
     yPosition -= 50;
     const patient = this.config.patientDetails;
-    page.drawText(`Date: ${patient.date}`, { x: 50, y: yPosition, size: 10, font });
-    page.drawText(`Patient's Name: ${patient.name}`, { x: 50, y: yPosition - 15, size: 10, font });
-    page.drawText(`Bill No: ${patient.billNo}`, { x: 300, y: yPosition, size: 10, font });
-    page.drawText(`Ward: ${patient.ward}`, { x: 300, y: yPosition - 15, size: 10, font });
+    page.drawText(`Date: ${patient.date}`, {
+      x: 50,
+      y: yPosition,
+      size: 10,
+      font,
+    });
+    page.drawText(`Patient's Name: ${patient.name}`, {
+      x: 50,
+      y: yPosition - 15,
+      size: 10,
+      font,
+    });
+    page.drawText(`Bill No: ${patient.billNo}`, {
+      x: 300,
+      y: yPosition,
+      size: 10,
+      font,
+    });
+    page.drawText(`Ward: ${patient.ward}`, {
+      x: 300,
+      y: yPosition - 15,
+      size: 10,
+      font,
+    });
 
     // Table configuration
     const tableTop = yPosition - 70;
@@ -63,7 +98,7 @@ export class PdfService {
     // Draw table header
     const headers = ['DESCRIPTION', 'CHARGES', 'QUANTITY', 'AMOUNT RS'];
     let currentX = tableLeft;
-    
+
     // Draw table header border
     page.drawLine({
       start: { x: tableLeft, y: currentY + rowHeight },
@@ -108,16 +143,38 @@ export class PdfService {
     currentY -= rowHeight;
     for (const charge of this.config.charges) {
       currentX = tableLeft;
-      
+
       // Draw row data
-      page.drawText(charge.description, { x: currentX + 5, y: currentY + 5, size: 10, font });
-      page.drawText(charge.charges.toString(), { x: currentX + columnWidths[0] + 5, y: currentY + 5, size: 10, font });
-      page.drawText(charge.quantity.toString(), { x: currentX + columnWidths[0] + columnWidths[1] + 5, y: currentY + 5, size: 10, font });
-      page.drawText(charge.amount.toString(), { x: currentX + columnWidths[0] + columnWidths[1] + columnWidths[2] + 5, y: currentY + 5, size: 10, font });
+      page.drawText(charge.description, {
+        x: currentX + 5,
+        y: currentY + 5,
+        size: 10,
+        font,
+      });
+      page.drawText(charge.charges.toString(), {
+        x: currentX + columnWidths[0] + 5,
+        y: currentY + 5,
+        size: 10,
+        font,
+      });
+      page.drawText(charge.quantity.toString(), {
+        x: currentX + columnWidths[0] + columnWidths[1] + 5,
+        y: currentY + 5,
+        size: 10,
+        font,
+      });
+      page.drawText(charge.amount.toString(), {
+        x: currentX + columnWidths[0] + columnWidths[1] + columnWidths[2] + 5,
+        y: currentY + 5,
+        size: 10,
+        font,
+      });
 
       // Draw vertical lines for each row
       for (let i = 0; i <= columnWidths.length; i++) {
-        const x = tableLeft + columnWidths.slice(0, i).reduce((sum, width) => sum + width, 0);
+        const x =
+          tableLeft +
+          columnWidths.slice(0, i).reduce((sum, width) => sum + width, 0);
         page.drawLine({
           start: { x, y: currentY },
           end: { x, y: currentY + rowHeight },
@@ -137,7 +194,12 @@ export class PdfService {
 
     // Draw total amount
     currentY -= 10;
-    page.drawText(`Total Amount: ${this.config.totalAmount}`, { x: 330, y: currentY, size: 12, font });
+    page.drawText(`Total Amount: ${this.config.totalAmount}`, {
+      x: 330,
+      y: currentY,
+      size: 12,
+      font,
+    });
 
     const pdfBytes = await pdfDoc.save();
     return Buffer.from(pdfBytes);

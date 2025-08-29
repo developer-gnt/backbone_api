@@ -9,7 +9,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 export class RolesService {
   constructor(
     @InjectRepository(Roles)
-    private roleRepository: Repository<Roles>) {}
+    private roleRepository: Repository<Roles>,
+  ) {}
 
   async findAll() {
     return await this.roleRepository.find();
@@ -25,8 +26,8 @@ export class RolesService {
   }
 
   async update(id: string, updateRoleDto: UpdateRoleDto) {
-    updateRoleDto.modified_on = Math.floor(Date.now()/1000);
-    return await this.roleRepository.update(id,updateRoleDto);
+    updateRoleDto.modified_on = Math.floor(Date.now() / 1000);
+    return await this.roleRepository.update(id, updateRoleDto);
   }
 
   async remove(id: string) {

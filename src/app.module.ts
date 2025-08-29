@@ -11,9 +11,16 @@ import { PdfService } from './pdf/pdf.service';
 import { PdfController } from './pdf/pdf.controller';
 import { ExcelController } from './excel/excel.controller';
 import { ExcelService } from './excel/excel.service';
-import { TasksModule } from './tasks/tasks.module';
 import { NotificationModule } from './notification/notification.module';
-
+import { StateModule } from './masters/state/state.module';
+import { ReferenceModule } from './masters/reference/reference.module';
+import { PackageModule } from './masters/package/package.module';
+import { CreditModule } from './masters/credit/credit.module';
+import { TransactionModule } from './masters/transaction/transaction.module';
+import { PointsModule } from './masters/points/points.module';
+import { OrderTypeModule } from './masters/order-type/order-type.module';
+import { FormsModule } from './masters/forms/forms.module';
+import { AlertAvailabilityModule } from './masters/alert-availability/alert-availability.module';
 
 @Module({
   imports: [
@@ -30,8 +37,16 @@ import { NotificationModule } from './notification/notification.module';
     RolesModule,
     UserModule,
     AuthModule,
-    TasksModule,
     NotificationModule,
+    StateModule,
+    ReferenceModule,
+    PackageModule,
+    CreditModule,
+    TransactionModule,
+    PointsModule,
+    OrderTypeModule,
+    FormsModule,
+    AlertAvailabilityModule,
   ],
   controllers: [AppController, PdfController, ExcelController],
   providers: [AppService, PdfService, ExcelService],

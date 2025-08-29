@@ -46,11 +46,11 @@ export class ExcelService {
       // Set response headers for Excel file download
       res.setHeader(
         'Content-Type',
-        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
       );
       res.setHeader(
         'Content-Disposition',
-        'attachment; filename=excel-data.xlsx'
+        'attachment; filename=excel-data.xlsx',
       );
 
       // Send the file buffer as the response
