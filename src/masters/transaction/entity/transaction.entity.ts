@@ -1,16 +1,17 @@
+import { UserBaseEntity } from 'src/packages/core/base-entity';
 import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
 
-@Entity('transaction')
-export class Transaction {
-  @PrimaryGeneratedColumn()
-  id: number;
+@Entity({ name: 'transaction' })
+export class Transaction extends UserBaseEntity {
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
-  @Column()
+  @Column({ type: 'varchar', length: 255 })
   name: string;
 
-  @Column()
+  @Column({ type: 'int' })
   credit_core: number;
 
-  @Column('decimal', { precision: 10, scale: 2 })
+  @Column({ type: 'decimal', precision: 10, scale: 2 })
   amount: number;
 }

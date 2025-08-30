@@ -1,13 +1,13 @@
 import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
 
-@Entity('alert_availability')
+@Entity({ name: 'alert_availability' })
 export class AlertAvailability {
-  @PrimaryGeneratedColumn()
-  id: number;
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
   @Column({ type: 'timestamp' })
   eta: Date;
 
-  @Column()
+  @Column({ type: 'varchar', length: 255 })
   availability_status: string;
 }

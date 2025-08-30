@@ -1,16 +1,16 @@
 import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
 
-@Entity('package')
+@Entity({ name: 'package' })
 export class Package {
-  @PrimaryGeneratedColumn()
-  id: number;
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
-  @Column()
+  @Column({ type: 'varchar', length: 255 })
   title: string;
 
-  @Column()
+  @Column({ type: 'int' })
   duration: number;
 
-  @Column('decimal', { precision: 10, scale: 2 })
+  @Column({ type: 'decimal', precision: 10, scale: 2 })
   price: number;
 }

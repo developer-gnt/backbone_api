@@ -1,13 +1,13 @@
 import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
 
-@Entity('order_type')
+@Entity({ name: 'order_type' })
 export class OrderType {
-  @PrimaryGeneratedColumn()
-  id: number;
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
-  @Column()
+  @Column({ type: 'varchar', length: 255 })
   order_type: string;
 
-  @Column()
+  @Column({ type: 'int' })
   sequence_number: number;
 }

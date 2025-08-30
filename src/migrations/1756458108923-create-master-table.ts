@@ -2,7 +2,6 @@ import { MigrationInterface, QueryRunner, Table } from 'typeorm';
 
 export class CreateMasterTables1756458108923 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
-    // State
     await queryRunner.createTable(
       new Table({
         name: 'state',
@@ -15,12 +14,36 @@ export class CreateMasterTables1756458108923 implements MigrationInterface {
             generationStrategy: 'uuid',
           },
           { name: 'name', type: 'varchar', length: '255', isNullable: false },
+          {
+            name: 'created_by',
+            type: 'uuid',
+            isNullable: true,
+          },
+          {
+            name: 'created_on',
+            type: 'bigint',
+            isNullable: true,
+          },
+          {
+            name: 'modified_by',
+            type: 'uuid',
+            isNullable: true,
+          },
+          {
+            name: 'modified_on',
+            type: 'bigint',
+            isNullable: true,
+          },
+          {
+            name: 'deleted',
+            type: 'boolean',
+            default: false,
+          },
         ],
       }),
       true,
     );
 
-    // Reference
     await queryRunner.createTable(
       new Table({
         name: 'reference',
@@ -33,12 +56,36 @@ export class CreateMasterTables1756458108923 implements MigrationInterface {
             generationStrategy: 'uuid',
           },
           { name: 'source', type: 'varchar', length: '255', isNullable: false },
+          {
+            name: 'created_by',
+            type: 'uuid',
+            isNullable: true,
+          },
+          {
+            name: 'created_on',
+            type: 'bigint',
+            isNullable: true,
+          },
+          {
+            name: 'modified_by',
+            type: 'uuid',
+            isNullable: true,
+          },
+          {
+            name: 'modified_on',
+            type: 'bigint',
+            isNullable: true,
+          },
+          {
+            name: 'deleted',
+            type: 'boolean',
+            default: false,
+          },
         ],
       }),
       true,
     );
 
-    // Package
     await queryRunner.createTable(
       new Table({
         name: 'package',
@@ -59,12 +106,36 @@ export class CreateMasterTables1756458108923 implements MigrationInterface {
             scale: 2,
             isNullable: false,
           },
+          {
+            name: 'created_by',
+            type: 'uuid',
+            isNullable: true,
+          },
+          {
+            name: 'created_on',
+            type: 'bigint',
+            isNullable: true,
+          },
+          {
+            name: 'modified_by',
+            type: 'uuid',
+            isNullable: true,
+          },
+          {
+            name: 'modified_on',
+            type: 'bigint',
+            isNullable: true,
+          },
+          {
+            name: 'deleted',
+            type: 'boolean',
+            default: false,
+          },
         ],
       }),
       true,
     );
 
-    // Credit
     await queryRunner.createTable(
       new Table({
         name: 'credit',
@@ -78,12 +149,36 @@ export class CreateMasterTables1756458108923 implements MigrationInterface {
           },
           { name: 'name', type: 'varchar', length: '255', isNullable: false },
           { name: 'credit', type: 'int', isNullable: false },
+          {
+            name: 'created_by',
+            type: 'uuid',
+            isNullable: true,
+          },
+          {
+            name: 'created_on',
+            type: 'bigint',
+            isNullable: true,
+          },
+          {
+            name: 'modified_by',
+            type: 'uuid',
+            isNullable: true,
+          },
+          {
+            name: 'modified_on',
+            type: 'bigint',
+            isNullable: true,
+          },
+          {
+            name: 'deleted',
+            type: 'boolean',
+            default: false,
+          },
         ],
       }),
       true,
     );
 
-    // Transaction
     await queryRunner.createTable(
       new Table({
         name: 'transaction',
@@ -104,12 +199,36 @@ export class CreateMasterTables1756458108923 implements MigrationInterface {
             scale: 2,
             isNullable: false,
           },
+          {
+            name: 'created_by',
+            type: 'uuid',
+            isNullable: true,
+          },
+          {
+            name: 'created_on',
+            type: 'bigint',
+            isNullable: true,
+          },
+          {
+            name: 'modified_by',
+            type: 'uuid',
+            isNullable: true,
+          },
+          {
+            name: 'modified_on',
+            type: 'bigint',
+            isNullable: true,
+          },
+          {
+            name: 'deleted',
+            type: 'boolean',
+            default: false,
+          },
         ],
       }),
       true,
     );
 
-    // Points
     await queryRunner.createTable(
       new Table({
         name: 'points',
@@ -128,12 +247,36 @@ export class CreateMasterTables1756458108923 implements MigrationInterface {
             isNullable: false,
           },
           { name: 'point', type: 'int', isNullable: false },
+          {
+            name: 'created_by',
+            type: 'uuid',
+            isNullable: true,
+          },
+          {
+            name: 'created_on',
+            type: 'bigint',
+            isNullable: true,
+          },
+          {
+            name: 'modified_by',
+            type: 'uuid',
+            isNullable: true,
+          },
+          {
+            name: 'modified_on',
+            type: 'bigint',
+            isNullable: true,
+          },
+          {
+            name: 'deleted',
+            type: 'boolean',
+            default: false,
+          },
         ],
       }),
       true,
     );
 
-    // Order Type
     await queryRunner.createTable(
       new Table({
         name: 'order_type',
@@ -152,12 +295,36 @@ export class CreateMasterTables1756458108923 implements MigrationInterface {
             isNullable: false,
           },
           { name: 'sequence_number', type: 'int', isNullable: false },
+          {
+            name: 'created_by',
+            type: 'uuid',
+            isNullable: true,
+          },
+          {
+            name: 'created_on',
+            type: 'bigint',
+            isNullable: true,
+          },
+          {
+            name: 'modified_by',
+            type: 'uuid',
+            isNullable: true,
+          },
+          {
+            name: 'modified_on',
+            type: 'bigint',
+            isNullable: true,
+          },
+          {
+            name: 'deleted',
+            type: 'boolean',
+            default: false,
+          },
         ],
       }),
       true,
     );
 
-    // Forms
     await queryRunner.createTable(
       new Table({
         name: 'forms',
@@ -171,12 +338,36 @@ export class CreateMasterTables1756458108923 implements MigrationInterface {
           },
           { name: 'sequence_number', type: 'int', isNullable: false },
           { name: 'form', type: 'varchar', length: '255', isNullable: false },
+          {
+            name: 'created_by',
+            type: 'uuid',
+            isNullable: true,
+          },
+          {
+            name: 'created_on',
+            type: 'bigint',
+            isNullable: true,
+          },
+          {
+            name: 'modified_by',
+            type: 'uuid',
+            isNullable: true,
+          },
+          {
+            name: 'modified_on',
+            type: 'bigint',
+            isNullable: true,
+          },
+          {
+            name: 'deleted',
+            type: 'boolean',
+            default: false,
+          },
         ],
       }),
       true,
     );
 
-    // Alert Availability
     await queryRunner.createTable(
       new Table({
         name: 'alert_availability',
@@ -194,6 +385,31 @@ export class CreateMasterTables1756458108923 implements MigrationInterface {
             type: 'varchar',
             length: '255',
             isNullable: false,
+          },
+          {
+            name: 'created_by',
+            type: 'uuid',
+            isNullable: true,
+          },
+          {
+            name: 'created_on',
+            type: 'bigint',
+            isNullable: true,
+          },
+          {
+            name: 'modified_by',
+            type: 'uuid',
+            isNullable: true,
+          },
+          {
+            name: 'modified_on',
+            type: 'bigint',
+            isNullable: true,
+          },
+          {
+            name: 'deleted',
+            type: 'boolean',
+            default: false,
           },
         ],
       }),

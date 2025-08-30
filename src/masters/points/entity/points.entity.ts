@@ -2,12 +2,12 @@ import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
 
 @Entity('points')
 export class Points {
-  @PrimaryGeneratedColumn()
-  id: number;
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
-  @Column()
+  @Column({ type: 'varchar', length: 255 })
   user_name: string;
 
-  @Column()
+  @Column({ type: 'int' })
   point: number;
 }

@@ -1,13 +1,13 @@
 import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
 
-@Entity('credit')
+@Entity({ name: 'credit' })
 export class Credit {
-  @PrimaryGeneratedColumn()
-  id: number;
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
-  @Column()
+  @Column({ type: 'varchar', length: 255 })
   name: string;
 
-  @Column()
+  @Column({ type: 'int' })
   credit: number;
 }
