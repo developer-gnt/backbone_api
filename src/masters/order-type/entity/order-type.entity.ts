@@ -1,7 +1,8 @@
+import { UserBaseEntity } from 'src/packages/core/base-entity';
 import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
 
 @Entity({ name: 'order_type' })
-export class OrderType {
+export class OrderType extends UserBaseEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 

@@ -10,14 +10,16 @@ import {
 import { PackageService } from './package.service';
 import { CreatePackageDto } from './dto/create-package.dto';
 import { UpdatePackageDto } from './dto/update-package.dto';
+import { CurrentUser } from 'src/auth/decorators/current-user-decorator';
+import { Users } from 'src/user/entities/user.entity';
 
 @Controller('masters/package')
 export class PackageController {
   constructor(private readonly packageService: PackageService) {}
 
   @Post()
-  create(@Body() dto: CreatePackageDto) {
-    return this.packageService.create(dto);
+  create(@CurrentUser() user: Users, @Body() dto: CreatePackageDto) {
+    return this.packageService.create(dto, user);
   }
 
   @Get()
@@ -31,8 +33,12 @@ export class PackageController {
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() dto: UpdatePackageDto) {
-    return this.packageService.update(id, dto);
+  update(
+    @CurrentUser() user: Users,
+    @Param('id') id: string,
+    @Body() dto: UpdatePackageDto,
+  ) {
+    return this.packageService.update(id, dto, user);
   }
 
   @Delete(':id')

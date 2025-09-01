@@ -10,14 +10,16 @@ import {
 import { FormsService } from './forms.service';
 import { CreateFormsDto } from './dto/create-forms.dto';
 import { UpdateFormsDto } from './dto/update-forms.dto';
+import { CurrentUser } from 'src/auth/decorators/current-user-decorator';
+import { Users } from 'src/user/entities/user.entity';
 
 @Controller('masters/forms')
 export class FormsController {
   constructor(private readonly formsService: FormsService) {}
 
   @Post()
-  create(@Body() dto: CreateFormsDto) {
-    return this.formsService.create(dto);
+  create(@CurrentUser() user: Users, @Body() dto: CreateFormsDto) {
+    return this.formsService.create(dto, user);
   }
 
   @Get()
@@ -31,8 +33,12 @@ export class FormsController {
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() dto: UpdateFormsDto) {
-    return this.formsService.update(id, dto);
+  update(
+    @CurrentUser() user: Users,
+    @Param('id') id: string,
+    @Body() dto: UpdateFormsDto,
+  ) {
+    return this.formsService.update(id, dto, user);
   }
 
   @Delete(':id')

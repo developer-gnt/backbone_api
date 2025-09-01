@@ -22,7 +22,7 @@ export class TransactionService {
   }
 
   async findAll(): Promise<Transaction[]> {
-    return await this.transactionRepo.find();
+    return await this.transactionRepo.find({ where: { deleted: false } });
   }
 
   async findOne(id: string): Promise<Transaction> {
@@ -42,14 +42,19 @@ export class TransactionService {
       throw new NotFoundException(`Transaction with id ${id} not found`);
     await this.transactionRepo.update(id, {
       ...dto,
-      //   modified_by: user.id,
+      // modified_by: user.id,
       modified_on: Math.floor(Date.now() / 1000),
     });
 
     return await this.transactionRepo.findOneBy({ id });
   }
 
-  async remove(id: string): Promise<void> {
-    await this.transactionRepo.delete(id);
+  async remove(id: string): Promise<Transaction> {
+    const result = this.transactionRepo.findOneBy({ id });
+    if (!result)
+      throw new NotFoundException(`Transaction with id ${id} not found`);
+
+    await this.transactionRepo.update(id, { deleted: true });
+    return await this.transactionRepo.findOne({ where: { id } });
   }
 }

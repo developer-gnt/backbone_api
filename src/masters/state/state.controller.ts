@@ -10,14 +10,16 @@ import {
 import { CreateStateDto } from './dto/create-state.dto';
 import { UpdateStateDto } from './dto/update-state.dto';
 import { StateService } from './state.service';
+import { CurrentUser } from 'src/auth/decorators/current-user-decorator';
+import { Users } from 'src/user/entities/user.entity';
 
 @Controller('masters/state')
 export class StateController {
   constructor(private readonly stateService: StateService) {}
 
   @Post()
-  create(@Body() dto: CreateStateDto) {
-    return this.stateService.create(dto);
+  create(@CurrentUser() user: Users, @Body() dto: CreateStateDto) {
+    return this.stateService.create(dto, user);
   }
 
   @Get()
@@ -31,8 +33,12 @@ export class StateController {
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() dto: UpdateStateDto) {
-    return this.stateService.update(id, dto);
+  update(
+    @CurrentUser() user: Users,
+    @Param('id') id: string,
+    @Body() dto: UpdateStateDto,
+  ) {
+    return this.stateService.update(id, dto, user);
   }
 
   @Delete(':id')

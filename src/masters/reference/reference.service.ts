@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { CreateReferenceDto } from './dto/create-reference.dto';
 import { UpdateReferenceDto } from './dto/update-reference.dto';
 import { Reference } from './entity/reference.entity';
+import { Users } from 'src/user/entities/user.entity';
 
 @Injectable()
 export class ReferenceService {
@@ -12,13 +13,15 @@ export class ReferenceService {
     private readonly referenceRepo: Repository<Reference>,
   ) {}
 
-  async create(dto: CreateReferenceDto): Promise<Reference> {
+  async create(dto: CreateReferenceDto, user: Users): Promise<Reference> {
     const ref = this.referenceRepo.create(dto);
+    // ref.created_by = user.id;
+    ref.created_on = Math.floor(Date.now() / 1000);
     return await this.referenceRepo.save(ref);
   }
 
   async findAll(): Promise<Reference[]> {
-    return await this.referenceRepo.find();
+    return await this.referenceRepo.find({ where: { deleted: false } });
   }
 
   async findOne(id: string): Promise<Reference> {
@@ -27,14 +30,26 @@ export class ReferenceService {
     return ref;
   }
 
-  async update(id: string, dto: UpdateReferenceDto): Promise<Reference> {
+  async update(
+    id: string,
+    dto: UpdateReferenceDto,
+    user: Users,
+  ): Promise<Reference> {
     const ref = await this.findOne(id);
-    Object.assign(ref, dto);
-    return await this.referenceRepo.save(ref);
+    if (!ref)
+      throw new NotFoundException(`Transaction with id ${id} not found`);
+    await this.referenceRepo.update(id, {
+      ...dto,
+      // modified_by: user.id,
+      modified_on: Math.floor(Date.now() / 1000),
+    });
+    return await this.referenceRepo.findOneBy({ id });
   }
 
-  async remove(id: string): Promise<void> {
-    const ref = await this.findOne(id);
-    await this.referenceRepo.remove(ref);
+  async remove(id: string): Promise<Reference> {
+    const ref = await this.referenceRepo.findOneBy({ id });
+    if (!ref) throw new NotFoundException(`Reference with id ${id} not found`);
+    await this.referenceRepo.update(id, { deleted: true });
+    return await this.referenceRepo.findOne({ where: { id } });
   }
 }

@@ -10,14 +10,16 @@ import {
 import { PointsService } from './points.service';
 import { CreatePointDto } from './dto/create-points.dto';
 import { UpdatePointDto } from './dto/update-points.dto';
+import { CurrentUser } from 'src/auth/decorators/current-user-decorator';
+import { Users } from 'src/user/entities/user.entity';
 
 @Controller('masters/points')
 export class PointsController {
   constructor(private readonly pointsService: PointsService) {}
 
   @Post()
-  create(@Body() dto: CreatePointDto) {
-    return this.pointsService.create(dto);
+  create(@CurrentUser() user: Users, @Body() dto: CreatePointDto) {
+    return this.pointsService.create(dto, user);
   }
 
   @Get()
@@ -31,8 +33,12 @@ export class PointsController {
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() dto: UpdatePointDto) {
-    return this.pointsService.update(id, dto);
+  update(
+    @CurrentUser() user: Users,
+    @Param('id') id: string,
+    @Body() dto: UpdatePointDto,
+  ) {
+    return this.pointsService.update(id, dto, user);
   }
 
   @Delete(':id')

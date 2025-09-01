@@ -1,7 +1,8 @@
+import { UserBaseEntity } from 'src/packages/core/base-entity';
 import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
 
 @Entity({ name: 'alert_availability' })
-export class AlertAvailability {
+export class AlertAvailability extends UserBaseEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 

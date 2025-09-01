@@ -1,7 +1,8 @@
+import { UserBaseEntity } from 'src/packages/core/base-entity';
 import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
 
 @Entity({ name: 'package' })
-export class Package {
+export class Package extends UserBaseEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 

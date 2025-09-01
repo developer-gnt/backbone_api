@@ -10,14 +10,16 @@ import {
 import { AlertAvailabilityService } from './alert-availability.service';
 import { CreateAlertAvailabilityDto } from './dto/create-alert-availability.dto';
 import { UpdateAlertAvailabilityDto } from './dto/update-alert-availability.dto';
+import { CurrentUser } from 'src/auth/decorators/current-user-decorator';
+import { Users } from 'src/user/entities/user.entity';
 
 @Controller('masters/alert-availability')
 export class AlertAvailabilityController {
   constructor(private readonly alertService: AlertAvailabilityService) {}
 
   @Post()
-  create(@Body() dto: CreateAlertAvailabilityDto) {
-    return this.alertService.create(dto);
+  create(@CurrentUser() user: Users, @Body() dto: CreateAlertAvailabilityDto) {
+    return this.alertService.create(dto, user);
   }
 
   @Get()
@@ -31,8 +33,12 @@ export class AlertAvailabilityController {
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() dto: UpdateAlertAvailabilityDto) {
-    return this.alertService.update(id, dto);
+  update(
+    @CurrentUser() user: Users,
+    @Param('id') id: string,
+    @Body() dto: UpdateAlertAvailabilityDto,
+  ) {
+    return this.alertService.update(id, dto, user);
   }
 
   @Delete(':id')
