@@ -9,7 +9,7 @@ async function bootstrap() {
   const port = Number(process.env.PORT ?? 3001);
 
   app.enableCors({
-    origin: 'http://localhost:3000',
+    origin: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true,
@@ -27,7 +27,7 @@ async function bootstrap() {
       'Swagger test surface for master modules aligned to the live Backbone database.',
     )
     .setVersion('2026.04')
-    .addServer(`http://localhost:${port}`, 'Local development')
+    .addServer(`http://localhost:${port}`, 'Production')
     .addBearerAuth(
       {
         type: 'http',
@@ -47,7 +47,7 @@ async function bootstrap() {
     },
   });
 
-  await app.listen(port);
+await app.listen(port, '0.0.0.0');
   console.log(`Backbone API running on http://localhost:${port}`);
   console.log(`Swagger docs ready at http://localhost:${port}/api`);
 }
