@@ -6,13 +6,19 @@ import {
   Delete,
   Param,
   Body,
+  UseGuards,
 } from '@nestjs/common';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { FormsService } from './forms.service';
+import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { CreateFormsDto } from './dto/create-forms.dto';
 import { UpdateFormsDto } from './dto/update-forms.dto';
 import { CurrentUser } from 'src/auth/decorators/current-user-decorator';
 import { Users } from 'src/user/entities/user.entity';
 
+@ApiTags('Master Forms')
+@ApiBearerAuth('access-token')
+@UseGuards(JwtAuthGuard)
 @Controller('masters/forms')
 export class FormsController {
   constructor(private readonly formsService: FormsService) {}

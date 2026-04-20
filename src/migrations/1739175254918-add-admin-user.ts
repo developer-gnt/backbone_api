@@ -11,7 +11,7 @@ export class AddAdminUser1739175254918 implements MigrationInterface {
     const hashedPassword = await bcrypt.hash(plainPassword, 10);
 
     await queryRunner.query(
-      `INSERT INTO main.users (id, email, username, password, role_id) VALUES ($1, $2, $3, $4, $5)`,
+      `INSERT INTO public.users (id, email, username, password, role_id) VALUES ($1, $2, $3, $4, $5)`,
       [
         'a87b8ae0-8f0f-4eab-8384-5031d3d9ec6f',
         email,
@@ -22,7 +22,7 @@ export class AddAdminUser1739175254918 implements MigrationInterface {
     );
   }
   public async down(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.query(`DELETE FROM users WHERE email = $1`, [
+    await queryRunner.query(`DELETE FROM public.users WHERE email = $1`, [
       'admin@admin.com',
     ]);
   }

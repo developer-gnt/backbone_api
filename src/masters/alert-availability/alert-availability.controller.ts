@@ -6,13 +6,19 @@ import {
   Delete,
   Param,
   Body,
+  UseGuards,
 } from '@nestjs/common';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { AlertAvailabilityService } from './alert-availability.service';
+import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { CreateAlertAvailabilityDto } from './dto/create-alert-availability.dto';
 import { UpdateAlertAvailabilityDto } from './dto/update-alert-availability.dto';
 import { CurrentUser } from 'src/auth/decorators/current-user-decorator';
 import { Users } from 'src/user/entities/user.entity';
 
+@ApiTags('Master Availability')
+@ApiBearerAuth('access-token')
+@UseGuards(JwtAuthGuard)
 @Controller('masters/alert-availability')
 export class AlertAvailabilityController {
   constructor(private readonly alertService: AlertAvailabilityService) {}
@@ -27,22 +33,22 @@ export class AlertAvailabilityController {
     return this.alertService.findAll();
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.alertService.findOne(id);
+  @Get(':packageName')
+  findOne(@Param('packageName') packageName: string) {
+    return this.alertService.findOne(packageName);
   }
 
-  @Patch(':id')
+  @Patch(':packageName')
   update(
     @CurrentUser() user: Users,
-    @Param('id') id: string,
+    @Param('packageName') packageName: string,
     @Body() dto: UpdateAlertAvailabilityDto,
   ) {
-    return this.alertService.update(id, dto, user);
+    return this.alertService.update(packageName, dto, user);
   }
 
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.alertService.remove(id);
+  @Delete(':packageName')
+  remove(@Param('packageName') packageName: string) {
+    return this.alertService.remove(packageName);
   }
 }

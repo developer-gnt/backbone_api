@@ -6,13 +6,19 @@ import {
   Param,
   Patch,
   Post,
+  UseGuards,
 } from '@nestjs/common';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { CreateStateDto } from './dto/create-state.dto';
 import { UpdateStateDto } from './dto/update-state.dto';
 import { StateService } from './state.service';
 import { CurrentUser } from 'src/auth/decorators/current-user-decorator';
 import { Users } from 'src/user/entities/user.entity';
 
+@ApiTags('Master Location')
+@ApiBearerAuth('access-token')
+@UseGuards(JwtAuthGuard)
 @Controller('masters/state')
 export class StateController {
   constructor(private readonly stateService: StateService) {}

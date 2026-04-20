@@ -1,10 +1,11 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CreateReferenceDto } from './dto/create-reference.dto';
 import { UpdateReferenceDto } from './dto/update-reference.dto';
 import { Reference } from './entity/reference.entity';
 import { Users } from 'src/user/entities/user.entity';
+import { getNextNumericId } from 'src/utils/manual-id.util';
 
 @Injectable()
 export class ReferenceService {
@@ -14,18 +15,17 @@ export class ReferenceService {
   ) {}
 
   async create(dto: CreateReferenceDto, user: Users): Promise<Reference> {
-    const ref = this.referenceRepo.create(dto);
-    // ref.created_by = user.id;
-    ref.created_on = Math.floor(Date.now() / 1000);
-    return await this.referenceRepo.save(ref);
+    const nextId = await getNextNumericId(this.referenceRepo);
+    const ref = this.referenceRepo.create({ id: nextId, ...dto });
+    return this.referenceRepo.save(ref);
   }
 
   async findAll(): Promise<Reference[]> {
-    return await this.referenceRepo.find({ where: { deleted: false } });
+    return this.referenceRepo.find({ order: { id: 'DESC' } });
   }
 
   async findOne(id: string): Promise<Reference> {
-    const ref = await this.referenceRepo.findOne({ where: { id } });
+    const ref = await this.referenceRepo.findOne({ where: { id: Number(id) } });
     if (!ref) throw new NotFoundException(`Reference ${id} not found`);
     return ref;
   }
@@ -35,21 +35,23 @@ export class ReferenceService {
     dto: UpdateReferenceDto,
     user: Users,
   ): Promise<Reference> {
-    const ref = await this.findOne(id);
-    if (!ref)
-      throw new NotFoundException(`Transaction with id ${id} not found`);
-    await this.referenceRepo.update(id, {
-      ...dto,
-      // modified_by: user.id,
-      modified_on: Math.floor(Date.now() / 1000),
-    });
-    return await this.referenceRepo.findOneBy({ id });
+    await this.findOne(id);
+    await this.referenceRepo.update(Number(id), dto as Partial<Reference>);
+    return this.findOne(id);
   }
 
-  async remove(id: string): Promise<Reference> {
-    const ref = await this.referenceRepo.findOneBy({ id });
-    if (!ref) throw new NotFoundException(`Reference with id ${id} not found`);
-    await this.referenceRepo.update(id, { deleted: true });
-    return await this.referenceRepo.findOne({ where: { id } });
+  async remove(id: string) {
+    await this.findOne(id);
+
+    try {
+      await this.referenceRepo.delete(Number(id));
+      return {
+        message: 'Reference source deleted successfully',
+      };
+    } catch {
+      throw new BadRequestException(
+        'Unable to delete this reference source right now. It may still be referenced elsewhere.',
+      );
+    }
   }
 }

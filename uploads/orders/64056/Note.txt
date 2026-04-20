@@ -1,0 +1,2 @@
+1. We have not received Front, Street, Street Alternate, Kitchen photos, so we have added label and kept space for photos.
+2. Comparables Sale price, sold date, DOM are not provided in MLS, please check.

@@ -21,6 +21,9 @@ import { PointsModule } from './masters/points/points.module';
 import { OrderTypeModule } from './masters/order-type/order-type.module';
 import { FormsModule } from './masters/forms/forms.module';
 import { AlertAvailabilityModule } from './masters/alert-availability/alert-availability.module';
+import { OrderModule } from './masters/order/order.module';
+import { ReportModule } from './masters/report/report.module';
+import { TatPricingModule } from './masters/tat-pricing/tat-pricing.module';
 
 @Module({
   imports: [
@@ -47,6 +50,9 @@ import { AlertAvailabilityModule } from './masters/alert-availability/alert-avai
     OrderTypeModule,
     FormsModule,
     AlertAvailabilityModule,
+    TatPricingModule,
+    OrderModule,
+    ReportModule,
   ],
   controllers: [AppController, PdfController, ExcelController],
   providers: [AppService, PdfService, ExcelService],

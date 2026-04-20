@@ -1,14 +1,10 @@
-import { UserBaseEntity } from 'src/packages/core/base-entity';
-import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
+import { Column, Entity, PrimaryColumn } from 'typeorm';
 
-@Entity({ name: 'alert_availability' })
-export class AlertAvailability extends UserBaseEntity {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
+@Entity({ name: 'availablity' })
+export class AlertAvailability {
+  @PrimaryColumn({ type: 'varchar', length: 100 })
+  package: string;
 
-  @Column({ type: 'timestamp' })
-  eta: Date;
-
-  @Column({ type: 'varchar', length: 255 })
-  availability_status: string;
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  msg: string;
 }

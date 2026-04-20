@@ -1,17 +1,19 @@
-import { UserBaseEntity } from 'src/packages/core/base-entity';
-import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
+import { Entity, PrimaryColumn, Column } from 'typeorm';
 
-@Entity({ name: 'package' })
-export class Package extends UserBaseEntity {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
+@Entity({ name: 'package_master' })
+export class Package {
+  @PrimaryColumn({ type: 'int' })
+  id: number;
 
-  @Column({ type: 'varchar', length: 255 })
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  duration: string;
+
+  @Column({ type: 'numeric', default: 0 })
+  price: number;
+
+  @Column({ type: 'varchar', length: 255, nullable: true })
   title: string;
 
-  @Column({ type: 'int' })
-  duration: number;
-
-  @Column({ type: 'decimal', precision: 10, scale: 2 })
-  price: number;
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  credit: string;
 }

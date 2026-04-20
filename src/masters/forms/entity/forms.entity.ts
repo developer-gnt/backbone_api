@@ -1,14 +1,10 @@
-import { UserBaseEntity } from 'src/packages/core/base-entity';
-import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
+import { Entity, PrimaryColumn, Column } from 'typeorm';
 
-@Entity({ name: 'forms' })
-export class Forms extends UserBaseEntity {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
+@Entity({ name: 'tbl_formstype' })
+export class Forms {
+  @PrimaryColumn({ type: 'int' })
+  id: number;
 
-  @Column({ type: 'int' })
-  sequence_number: number;
-
-  @Column({ type: 'varchar', length: 255 })
+  @Column({ type: 'varchar', length: 255, nullable: true })
   form: string;
 }

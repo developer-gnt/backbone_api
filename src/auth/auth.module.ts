@@ -4,6 +4,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { RateLimiterModule } from 'nestjs-rate-limiter';
+import { State } from 'src/masters/state/entity/state.entity';
 import { Roles } from 'src/roles/entities/roles.entity';
 import { RolesModule } from 'src/roles/roles.module';
 import { Users } from 'src/user/entities/user.entity';
@@ -23,7 +24,7 @@ import { RolesGuard } from 'src/packages/authorization/roles.guard';
     UserModule,
     JwtModule,
     PassportModule,
-    TypeOrmModule.forFeature([Users, Roles]),
+    TypeOrmModule.forFeature([Users, Roles, State]),
     RolesModule,
     RateLimiterModule,
   ],

@@ -5,6 +5,7 @@ import {
   HttpCode,
   HttpStatus,
   Post,
+  Query,
   Req,
   Res,
   UseGuards,
@@ -32,6 +33,36 @@ import { CreateUserDto } from '../dto/create-user.dto';
 @ApiTags('Auth Controller')
 export class AuthController {
   constructor(private authService: AuthService) {}
+
+  @Public()
+  @HttpCode(HttpStatus.OK)
+  @Get('registration-meta')
+  @ApiOperation({ summary: 'Public metadata for the client registration form' })
+  async getRegistrationMeta() {
+    return this.authService.getClientRegistrationMeta();
+  }
+
+  @Public()
+  @HttpCode(HttpStatus.OK)
+  @Get('check-username')
+  @ApiOperation({ summary: 'Check whether a client login name is available' })
+  async checkUsername(@Query('username') username?: string) {
+    return this.authService.checkUsernameAvailability(username);
+  }
+
+  @Public()
+  @HttpCode(HttpStatus.CREATED)
+  @Post('client-registration')
+  @ApiOperation({ summary: 'Register a new client without authentication' })
+  async clientRegistration(
+    @Body()
+    body: CreateUserDto & {
+      software?: string;
+      agreeToTerms?: boolean;
+    },
+  ) {
+    return this.authService.registerClient(body);
+  }
 
   @Public()
   @HttpCode(HttpStatus.OK)
@@ -88,7 +119,7 @@ export class AuthController {
     }
   }
 
-  @ApiBearerAuth('authorization')
+  @ApiBearerAuth('access-token')
   @HttpCode(HttpStatus.OK)
   @Get('me')
   @UseGuards(JwtAuthGuard)
@@ -106,7 +137,7 @@ export class AuthController {
     }
   }
 
-  @ApiBearerAuth('authorization')
+  @ApiBearerAuth('access-token')
   @HttpCode(HttpStatus.OK)
   @Post('logout')
   @UseGuards(JwtAuthGuard)
@@ -161,15 +192,26 @@ export class AuthController {
     await this.authService.signIn(response, user, true);
   }
 
+  @ApiBearerAuth('access-token')
   @Post('change-password')
+  @UseGuards(JwtAuthGuard)
   async changePassword(
     @Req() req: any,
-    @Body() body: { userId: string; password: string },
+    @Body()
+    body: {
+      currentPassword?: string;
+      newPassword?: string;
+      password?: string;
+    },
   ): Promise<{ message: string }> {
-    const userId = req.user.id; // Extract user ID from the JWT payload
-    const { password } = body;
+    const userId = req.user.id;
+    const nextPassword = body.newPassword ?? body.password;
 
-    await this.authService.changePassword(userId, password);
+    await this.authService.changePassword(
+      userId,
+      nextPassword,
+      body.currentPassword,
+    );
     return { message: 'Password changed successfully' };
   }
 }

@@ -1,11 +1,10 @@
-import { UserBaseEntity } from 'src/packages/core/base-entity';
-import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
+import { Entity, PrimaryColumn, Column } from 'typeorm';
 
-@Entity('reference')
-export class Reference extends UserBaseEntity {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
+@Entity({ name: 'referencesource_master' })
+export class Reference {
+  @PrimaryColumn({ type: 'int' })
+  id: number;
 
-  @Column({ type: 'varchar', length: 255 })
-  source: string;
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  reference_source: string;
 }

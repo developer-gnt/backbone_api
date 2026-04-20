@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CreateAlertAvailabilityDto } from './dto/create-alert-availability.dto';
@@ -16,45 +16,59 @@ export class AlertAvailabilityService {
   async create(
     dto: CreateAlertAvailabilityDto,
     user: Users,
-  ): Promise<AlertAvailability> {
+  ): Promise<any> {
     const alert = this.alertRepo.create(dto);
-    // alert.created_by = user.id;
-    alert.created_on = Math.floor(Date.now() / 1000);
-    return await this.alertRepo.save(alert);
+    const saved = await this.alertRepo.save(alert);
+
+    return {
+      message: 'updation done successfully',
+      data: saved,
+    };
   }
 
   async findAll(): Promise<AlertAvailability[]> {
-    return await this.alertRepo.find({ where: { deleted: false } });
+    return this.alertRepo.find({ order: { package: 'ASC' } });
   }
 
-  async findOne(id: string): Promise<AlertAvailability> {
-    const alert = await this.alertRepo.findOneBy({ id });
+  async findOne(packageName: string): Promise<AlertAvailability> {
+    const alert = await this.alertRepo.findOneBy({ package: packageName });
     if (!alert)
-      throw new NotFoundException(`AlertAvailability with id ${id} not found`);
+      throw new NotFoundException(
+        `Availability message for package ${packageName} not found`,
+      );
     return alert;
   }
 
   async update(
-    id: string,
+    packageName: string,
     dto: UpdateAlertAvailabilityDto,
     user: Users,
-  ): Promise<AlertAvailability> {
-    const alert = await this.alertRepo.findOneBy({ id });
-    if (!alert)
-      throw new NotFoundException(`AlertAvailability with id ${id} not found`);
-    await this.alertRepo.update(id, {
-      ...dto,
-      // modified_by: user.id,
-      modified_on: Math.floor(Date.now() / 1000),
+  ): Promise<any> {
+    const targetPackage = dto.package || packageName;
+
+    await this.alertRepo.save({
+      package: targetPackage,
+      msg: dto.msg,
     });
-    return await this.alertRepo.findOneBy({ id });
+
+    return {
+      message: 'updation done successfully',
+      data: await this.findOne(targetPackage),
+    };
   }
 
-  async remove(id: string): Promise<AlertAvailability> {
-    const ref = await this.alertRepo.findOneBy({ id });
-    if (!ref)
-      throw new NotFoundException(`Alert Availability with id ${id} not found`);
-    await this.alertRepo.update(id, { deleted: true });
-    return await this.alertRepo.findOne({ where: { id } });
+  async remove(packageName: string) {
+    await this.findOne(packageName);
+
+    try {
+      await this.alertRepo.delete({ package: packageName });
+      return {
+        message: 'Availability alert deleted successfully',
+      };
+    } catch {
+      throw new BadRequestException(
+        'Unable to delete this availability alert right now. It may still be referenced elsewhere.',
+      );
+    }
   }
 }

@@ -26,18 +26,30 @@ export class RolesGuard implements CanActivate {
       return true;
     }
 
-    const requiredRoles = this.reflector.getAllAndOverride(ROLES_KEY, [
+    const requiredRoles = this.reflector.getAllAndOverride<string[]>(ROLES_KEY, [
       context.getHandler(),
       context.getClass(),
     ]);
 
-    if (requiredRoles) {
-      const { user } = context.switchToHttp().getRequest();
-      const isUserHasAccess = user.role.permissions.some(
-        (role: string) => role === requiredRoles?.[0],
-      );
-      return isUserHasAccess;
+    if (!requiredRoles?.length) {
+      return true;
     }
-    return true;
+
+    const { user } = context.switchToHttp().getRequest();
+    if (!user) {
+      return false;
+    }
+
+    if (typeof user.role === 'string' && user.role.toLowerCase() === 'admin') {
+      return true;
+    }
+
+    const permissions = Array.isArray(user.permissions)
+      ? user.permissions
+      : Array.isArray(user.role?.permissions)
+        ? user.role.permissions
+        : [];
+
+    return requiredRoles.some((role: string) => permissions.includes(role));
   }
 }

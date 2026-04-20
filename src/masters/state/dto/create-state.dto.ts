@@ -1,3 +1,8 @@
+import { ApiProperty } from '@nestjs/swagger';
+import { IsString } from 'class-validator';
+
 export class CreateStateDto {
-  name: string;
+  @ApiProperty({ example: 'Los Angeles' })
+  @IsString()
+  city: string;
 }

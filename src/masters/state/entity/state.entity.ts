@@ -1,11 +1,10 @@
-import { UserBaseEntity } from 'src/packages/core/base-entity';
-import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
+import { Entity, PrimaryColumn, Column } from 'typeorm';
 
-@Entity('state')
-export class State extends UserBaseEntity {
-  @PrimaryGeneratedColumn()
-  id: string;
+@Entity({ name: 'city_master' })
+export class State {
+  @PrimaryColumn({ type: 'int' })
+  id: number;
 
-  @Column()
-  name: string;
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  city: string;
 }
