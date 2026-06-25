@@ -21,7 +21,7 @@ const config = {
   synchronize: false,
   schema: 'public',
   migrationsRun: false,
-  logging: true,
+  logging: ["query", "error"],
 };
 
 export default registerAs('typeorm', () => config);

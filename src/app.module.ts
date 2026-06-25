@@ -24,6 +24,9 @@ import { AlertAvailabilityModule } from './masters/alert-availability/alert-avai
 import { OrderModule } from './masters/order/order.module';
 import { ReportModule } from './masters/report/report.module';
 import { TatPricingModule } from './masters/tat-pricing/tat-pricing.module';
+import { APP_GUARD } from '@nestjs/core';
+import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
+import { RolesGuard } from './packages/authorization/roles.guard';
 
 @Module({
   imports: [
@@ -55,6 +58,20 @@ import { TatPricingModule } from './masters/tat-pricing/tat-pricing.module';
     ReportModule,
   ],
   controllers: [AppController, PdfController, ExcelController],
-  providers: [AppService, PdfService, ExcelService],
+  providers: [
+    AppService,
+    PdfService,
+    ExcelService,
+
+    // {
+    //   provide: APP_GUARD,
+    //   useClass: JwtAuthGuard,
+    // },
+
+    // {
+    //   provide: APP_GUARD,
+    //   useClass: RolesGuard,
+    // },
+  ],
 })
-export class AppModule {}
+export class AppModule { }

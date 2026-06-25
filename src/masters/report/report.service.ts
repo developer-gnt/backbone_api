@@ -29,7 +29,7 @@ export class ReportService {
     private readonly attendanceRepo: Repository<Attendance>,
     @InjectRepository(WebsiteAccessLog)
     private readonly websiteAccessRepo: Repository<WebsiteAccessLog>,
-  ) {}
+  ) { }
 
   async getEmployeeReport(role?: string) {
     const selectedRoles = role && role !== 'All'
@@ -223,8 +223,8 @@ export class ReportService {
 
     const creatorValues = (currentUser?.role ?? '').toLowerCase() === 'client'
       ? [currentUser?.username, currentUser?.email, `${currentUser?.id ?? ''}`]
-          .map((value) => `${value ?? ''}`.trim().toLowerCase())
-          .filter(Boolean)
+        .map((value) => `${value ?? ''}`.trim().toLowerCase())
+        .filter(Boolean)
       : requestedCreators;
 
     if (creatorValues.length === 1) {
@@ -425,8 +425,8 @@ export class ReportService {
 
     const allowedUsernames = (currentUser?.role ?? '').toLowerCase() === 'client'
       ? [currentUser?.username, currentUser?.email]
-          .map((value) => `${value ?? ''}`.trim().toLowerCase())
-          .filter(Boolean)
+        .map((value) => `${value ?? ''}`.trim().toLowerCase())
+        .filter(Boolean)
       : [];
 
     const normalizedUsername = filters?.username?.trim().toLowerCase();
@@ -536,9 +536,10 @@ export class ReportService {
   }
 
   async getWebsiteAccess() {
-    return this.websiteAccessRepo.find({
-      order: { id: 'DESC' },
-    });
+    return this.websiteAccessRepo
+      .createQueryBuilder('WebsiteAccessLog')
+      .orderBy('"WebsiteAccessLog"."Id"', 'DESC')
+      .getMany();
   }
 
   async getDashboardSummary() {
@@ -554,7 +555,9 @@ export class ReportService {
         }),
         this.orderRepo.find({ order: { id: 'DESC' } }),
         this.transactionRepo.find({ order: { id: 'DESC' } }),
-        this.websiteAccessRepo.find({ order: { id: 'DESC' } }),
+        this.websiteAccessRepo
+          .createQueryBuilder('WebsiteAccessLog')
+          .orderBy('"WebsiteAccessLog"."Id"', 'DESC').getMany(),
         this.attendanceRepo.find({ order: { todaysdate: 'DESC' } }),
       ]);
 
