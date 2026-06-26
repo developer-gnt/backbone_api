@@ -62,11 +62,7 @@ export class SeedLegacyClientTatPricing1760200000000
       matched_users AS (
         SELECT DISTINCT ON (LOWER(rule.lookup_key), reg.id)
           rule.lookup_key,
-          CASE
-            WHEN reg.id ~ '^[0-9]+$'
-            THEN reg.id::INTEGER
-            ELSE NULL
-          END AS user_id
+          reg.id AS user_id
         FROM legacy_rules rule
         JOIN registrations reg
           ON LOWER(COALESCE(reg.role, '')) = 'client'
@@ -80,11 +76,7 @@ export class SeedLegacyClientTatPricing1760200000000
       ),
       package_candidates AS (
         SELECT
-          CASE
-            WHEN pkg.id ~ '^[0-9]+$'
-            THEN pkg.id::INTEGER
-            ELSE NULL
-          END AS id,
+          pkg.id AS id,
           CASE
             WHEN COALESCE(
               NULLIF(REGEXP_REPLACE(COALESCE(pkg.duration, ''), '[^0-9]', '', 'g'), ''),
@@ -119,7 +111,7 @@ export class SeedLegacyClientTatPricing1760200000000
       packages_by_tat AS (
         SELECT
           tat_code,
-          id::INTEGER AS package_id
+          id AS package_id
         FROM package_candidates
         WHERE tat_code IN (12, 6, 4)
           AND rn = 1
@@ -127,8 +119,8 @@ export class SeedLegacyClientTatPricing1760200000000
       ),
       seed_rows AS (
         SELECT DISTINCT
-          user_match.user_id::INTEGER AS user_id,
-          package_match.package_id::INTEGER AS package_id,
+          user_match.user_id AS user_id,
+          package_match.package_id AS package_id,
           rule.custom_price,
           rule.custom_credit,
           rule.notes

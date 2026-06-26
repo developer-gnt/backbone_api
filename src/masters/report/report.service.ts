@@ -417,7 +417,7 @@ export class ReportService {
   ) {
     const transactions = await this.transactionRepo.find({
       where: filters?.status ? { status: filters.status } : {},
-      order: { id: 'DESC' },
+      order: { created_date: 'DESC' },
     });
     const users = await this.userRepo.find();
     const orders = await this.orderRepo.find();
@@ -538,7 +538,7 @@ export class ReportService {
   async getWebsiteAccess() {
     return this.websiteAccessRepo
       .createQueryBuilder('WebsiteAccessLog')
-      .orderBy('"WebsiteAccessLog"."Id"', 'DESC')
+      .orderBy('WebsiteAccessLog.id', 'DESC')
       .getMany();
   }
 
@@ -557,7 +557,7 @@ export class ReportService {
         this.transactionRepo.find({ order: { id: 'DESC' } }),
         this.websiteAccessRepo
           .createQueryBuilder('WebsiteAccessLog')
-          .orderBy('"WebsiteAccessLog"."Id"', 'DESC').getMany(),
+          .orderBy('WebsiteAccessLog.id', 'DESC').getMany(),
         this.attendanceRepo.find({ order: { todaysdate: 'DESC' } }),
       ]);
 

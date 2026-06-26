@@ -2,23 +2,30 @@ import { Column, Entity, PrimaryColumn } from 'typeorm';
 
 @Entity({ name: 'lasttouchdate' })
 export class WebsiteAccessLog {
-  @PrimaryColumn({ name: 'Id', type: 'text' })
-  id: string;
+  @PrimaryColumn({
+    name: 'id',
+    type: 'int',
+  })
+  id: number;
 
   @Column({
-    name: 'UserName',
-    type: 'varchar', length: 4000, nullable: true
+    name: 'username',
+    type: 'varchar',
+    length: 4000,
+    nullable: true,
   })
   username: string;
 
   @Column({
-    name: 'IPAddress',
-    type: 'varchar', length: 4000, nullable: true
+    name: 'ipaddress',
+    type: 'varchar',
+    length: 4000,
+    nullable: true,
   })
   ipaddress: string;
 
   @Column({
-    name: 'LastLoginTime',
+    name: 'lastlogintime',
     type: 'varchar',
     length: 4000,
     nullable: true,
@@ -26,14 +33,18 @@ export class WebsiteAccessLog {
   lastlogintime: string;
 
   @Column({
-    name: 'UserAddress',
-    type: 'varchar', length: 4000, nullable: true
+    name: 'useraddress',
+    type: 'varchar',
+    length: 4000,
+    nullable: true,
   })
   useraddress: string;
 
   @Column({
-    name: 'Country',
-    type: 'varchar', length: 4000, nullable: true
+    name: 'country',
+    type: 'varchar',
+    length: 4000,
+    nullable: true,
   })
   country: string;
 }
