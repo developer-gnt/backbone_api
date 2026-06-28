@@ -27,6 +27,7 @@ import { TatPricingModule } from './masters/tat-pricing/tat-pricing.module';
 import { APP_GUARD } from '@nestjs/core';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 import { RolesGuard } from './packages/authorization/roles.guard';
+import { PaypalModule } from './paypal/paypal.module';
 
 @Module({
   imports: [
@@ -40,6 +41,7 @@ import { RolesGuard } from './packages/authorization/roles.guard';
       useFactory: async (configService: ConfigService) =>
         configService.get('typeorm'),
     }),
+    PaypalModule,
     RolesModule,
     UserModule,
     AuthModule,

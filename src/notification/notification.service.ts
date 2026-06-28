@@ -13,7 +13,7 @@ export class NotificationService {
     private readonly userRepository: Repository<Users>,
     @InjectRepository(Referral)
     private readonly referralRepository: Repository<Referral>,
-  ) {}
+  ) { }
 
   private escapeHtml(value: string) {
     return value
@@ -98,13 +98,13 @@ export class NotificationService {
 
     const recipients = [
       email,
-      process.env.SMTP_NOTIFY_TO || 'backboneappraisal2021@gmail.com',
+      process.env.SMTP_ORDER_NOTIFY_TO || 'orders@backbonedatasolutions.com',
     ].filter(Boolean);
 
     const smtpConfigured = Boolean(
       process.env.SMTP_HOST &&
-        process.env.SMTP_USER &&
-        process.env.SMTP_PASSWORD,
+      process.env.SMTP_USER &&
+      process.env.SMTP_PASSWORD,
     );
 
     if (!smtpConfigured) {
@@ -165,8 +165,8 @@ export class NotificationService {
 
     const smtpConfigured = Boolean(
       process.env.SMTP_HOST &&
-        process.env.SMTP_USER &&
-        process.env.SMTP_PASSWORD,
+      process.env.SMTP_USER &&
+      process.env.SMTP_PASSWORD,
     );
 
     if (!smtpConfigured) {
@@ -179,7 +179,7 @@ export class NotificationService {
     }
 
     const notifyTo =
-      process.env.SMTP_NOTIFY_TO ||
+      process.env.SMTP_ORDER_NOTIFY_TO ||
       process.env.SMTP_FROM ||
       process.env.SMTP_USER;
 
@@ -254,8 +254,8 @@ export class NotificationService {
     const html = this.buildEmailBody(message);
     const smtpConfigured = Boolean(
       process.env.SMTP_HOST &&
-        process.env.SMTP_USER &&
-        process.env.SMTP_PASSWORD,
+      process.env.SMTP_USER &&
+      process.env.SMTP_PASSWORD,
     );
 
     if (!smtpConfigured) {

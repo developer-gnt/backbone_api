@@ -4,11 +4,15 @@ import { TransactionController } from './transaction.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Transaction } from './entity/transaction.entity';
 import { Users } from 'src/user/entities/user.entity';
+import { PaypalService } from 'src/paypal/paypal.service';
 
 @Module({
   imports: [TypeOrmModule.forFeature([Transaction, Users])],
-  providers: [TransactionService],
+  providers: [
+    TransactionService,
+    PaypalService,
+  ],
   controllers: [TransactionController],
   exports: [TransactionService],
 })
-export class TransactionModule {}
+export class TransactionModule { }

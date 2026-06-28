@@ -37,7 +37,7 @@ export class OrderService {
     private readonly chatRepo: Repository<ChatMessage>,
     private readonly tatPricingService: TatPricingService,
     private readonly dataSource: DataSource,
-  ) {}
+  ) { }
 
   private toNullableNumber(value: unknown): number | null {
     if (value === undefined || value === null || `${value}`.trim() === '') {
@@ -70,8 +70,8 @@ export class OrderService {
     const requestedCreatedBy = dto.createdby?.trim();
     const createdForUser = requestedCreatedBy
       ? await this.userRepo.findOne({
-          where: [{ username: requestedCreatedBy }, { email: requestedCreatedBy }],
-        })
+        where: [{ username: requestedCreatedBy }, { email: requestedCreatedBy }],
+      })
       : null;
 
     const walletOwner =
@@ -212,6 +212,54 @@ export class OrderService {
         );
       }
 
+      await this.sendOrderEmail({
+        order: savedOrder,
+        subject: `New Order File #${savedOrder.id} - ${savedOrder.subject_address ?? ''}`,
+        html: `
+    <div>
+      <p>
+        Hello ${savedOrder.createdby},
+        <br/><br/>
+
+        Thank you for placing your order with Backbone Data Solutions.
+
+        <br/><br/>
+
+        File #${savedOrder.id}
+
+        <br/><br/>
+
+        Address:
+        ${savedOrder.subject_address ?? ''}
+
+        <br/><br/>
+
+        Package:
+        ${savedOrder.package ?? ''}
+
+        <br/><br/>
+
+        We have successfully received your appraisal order.
+        Our team has started processing it.
+
+      </p>
+
+      <p>
+        Thank you,
+
+        <br/><br/>
+
+        <b>Backbone Data Solutions Team</b>
+
+        <br/>
+
+        +1 (760) 376-5994
+      </p>
+
+    </div>
+  `,
+      });
+
       return {
         message: 'Order created successfully',
         wallete_balance: updatedBalance,
@@ -335,9 +383,9 @@ export class OrderService {
       senderRole === 'team'
         ? 'Backbone Data Solutions'
         : `${user.firstname ?? ''} ${user.lastname ?? ''}`.trim() ||
-          user.username ||
-          user.companyname ||
-          'Client';
+        user.username ||
+        user.companyname ||
+        'Client';
 
     await this.chatRepo.save(
       this.chatRepo.create({
@@ -431,7 +479,7 @@ export class OrderService {
         from: process.env.SMTP_FROM || process.env.SMTP_USER,
         to: Array.from(to),
         cc: this.splitEmails(client.cc),
-        bcc: Array.from(new Set([...this.splitEmails(client.bcc), 'backboneappraisal2021@gmail.com'])),
+        bcc: Array.from(new Set([...this.splitEmails(client.bcc), process.env.SMTP_ORDER_NOTIFY_TO || 'orders@backbonedatasolutions.com'])),
         subject: options.subject,
         html: options.html,
         attachments: options.attachments,
@@ -666,8 +714,8 @@ export class OrderService {
     const currentOrder = user ? await this.ensureOrderAccess(id, user) : await this.findOne(id);
     const normalizedFeedbackRating =
       dto.feedback_rating !== undefined &&
-      dto.feedback_rating !== null &&
-      `${dto.feedback_rating}` !== ''
+        dto.feedback_rating !== null &&
+        `${dto.feedback_rating}` !== ''
         ? Number(dto.feedback_rating)
         : undefined;
 
@@ -676,8 +724,8 @@ export class OrderService {
       ...dtoWithoutMeta,
       tat_package_id:
         dto.tat_package_id !== undefined &&
-        dto.tat_package_id !== null &&
-        `${dto.tat_package_id}` !== ''
+          dto.tat_package_id !== null &&
+          `${dto.tat_package_id}` !== ''
           ? Number(dto.tat_package_id)
           : undefined,
       tat_hours:
@@ -686,8 +734,8 @@ export class OrderService {
           : undefined,
       charged_amount:
         dto.charged_amount !== undefined &&
-        dto.charged_amount !== null &&
-        `${dto.charged_amount}` !== ''
+          dto.charged_amount !== null &&
+          `${dto.charged_amount}` !== ''
           ? Number(dto.charged_amount)
           : undefined,
       amount:
@@ -746,15 +794,15 @@ export class OrderService {
     const updatedOrder = await this.findOne(id);
     const propAdd = updatedOrder.subject_address || '';
     const supportEmail =
-      process.env.SMTP_NOTIFY_TO ||
+      process.env.SMTP_ORDER_NOTIFY_TO ||
       process.env.SMTP_FROM ||
       process.env.SMTP_USER ||
-      'backboneappraisal2021@gmail.com';
+      'orders@backbonedatasolutions.com';
 
     const smtpConfigured = Boolean(
       process.env.SMTP_HOST &&
-        process.env.SMTP_USER &&
-        process.env.SMTP_PASSWORD,
+      process.env.SMTP_USER &&
+      process.env.SMTP_PASSWORD,
     );
 
     if (smtpConfigured) {
