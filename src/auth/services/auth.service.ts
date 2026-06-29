@@ -32,7 +32,7 @@ export class AuthService {
     private userRepository: Repository<Users>,
     @InjectRepository(State)
     private stateRepository: Repository<State>,
-  ) {}
+  ) { }
 
   async getClientRegistrationMeta() {
     const states = await this.stateRepository.find({
@@ -154,8 +154,8 @@ export class AuthService {
 
     const smtpConfigured = Boolean(
       process.env.SMTP_HOST &&
-        process.env.SMTP_USER &&
-        process.env.SMTP_PASSWORD,
+      process.env.SMTP_USER &&
+      process.env.SMTP_PASSWORD,
     );
 
     if (smtpConfigured && email) {
@@ -166,7 +166,7 @@ export class AuthService {
 
       const loginUrl =
         this.configService.get<string>('AUTH_UI_REDIRECT') ||
-        'http://localhost:3000/auth/sign-in';
+        'https://app.backbonedatasolutions.com/auth/sign-in';
 
       await emailTransporter.sendMail({
         from: process.env.SMTP_FROM || process.env.SMTP_USER,
@@ -184,6 +184,41 @@ export class AuthService {
           </div>
         `,
       });
+
+      try {
+
+        await emailTransporter.sendMail({
+          from: process.env.SMTP_FROM || process.env.SMTP_USER,
+          to: process.env.SMTP_REGISTRATION_NOTIFY_TO,
+          subject: 'New Client Registration',
+          html: `
+    <div style="font-family: Arial, sans-serif; line-height: 1.6;">
+      <p>Hello Team,</p>
+
+      <p>A new client has registered.</p>
+
+      <table>
+        <tr><td><b>Name</b></td><td>${firstname} ${lastname}</td></tr>
+        <tr><td><b>Company</b></td><td>${companyname}</td></tr>
+        <tr><td><b>Email</b></td><td>${email}</td></tr>
+        <tr><td><b>Username</b></td><td>${username}</td></tr>
+        <tr><td><b>Phone</b></td><td>${mobileno}</td></tr>
+        <tr><td><b>Software</b></td><td>${software || '-'}</td></tr>
+      </table>
+
+      <br/>
+
+      <p>Please review and activate the account.</p>
+
+      <br/>
+
+      <b>Backbone Data Solutions</b>
+    </div>
+  `,
+        });
+      } catch (error) {
+        console.error('Registration notification email failed:', error);
+      }
     }
 
     return {
@@ -258,11 +293,11 @@ export class AuthService {
     const expiresAccessToken = new Date();
     expiresAccessToken.setMilliseconds(
       expiresAccessToken.getTime() +
-        parseInt(
-          this.configService.getOrThrow<string>(
-            'JWT_ACCESS_TOKEN_EXPIRATION_MS',
-          ),
+      parseInt(
+        this.configService.getOrThrow<string>(
+          'JWT_ACCESS_TOKEN_EXPIRATION_MS',
         ),
+      ),
     );
 
     const access_token = this.jwtService.sign(payload, {
@@ -287,11 +322,11 @@ export class AuthService {
     const expiresRefreshoken = new Date();
     expiresRefreshoken.setMilliseconds(
       expiresRefreshoken.getTime() +
-        parseInt(
-          this.configService.getOrThrow<string>(
-            'JWT_REFRESH_TOKEN_EXPIRATION_MS',
-          ),
+      parseInt(
+        this.configService.getOrThrow<string>(
+          'JWT_REFRESH_TOKEN_EXPIRATION_MS',
         ),
+      ),
     );
 
     const refresh_token = await this.jwtService.sign(payload, {

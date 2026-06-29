@@ -54,12 +54,13 @@ export class TransactionService {
       from: process.env.SMTP_FROM || process.env.SMTP_USER,
       to,
       cc: this.splitEmails(user.cc),
-      bcc: Array.from(
-        new Set([
-          ...this.splitEmails(user.bcc),
-          process.env.SMTP_ORDER_NOTIFY_TO || process.env.SMTP_FROM || process.env.SMTP_USER,
-        ].filter(Boolean)),
-      ),
+      bcc: this.splitEmails(user.bcc),
+      // bcc: Array.from(
+      //   new Set([
+      //     ...this.splitEmails(user.bcc),
+      //     process.env.SMTP_PAYPAL_NOTIFY_TO || process.env.SMTP_FROM || process.env.SMTP_USER,
+      //   ].filter(Boolean)),
+      // ),
       subject: 'Backbone Data Solutions-Credits Loaded',
       html: `<div><p>Hello ${name}!!,<br/><br/>Thank you for purchasing credits and your request has been successfully processed.<br/><br/>The available balance is ${updatedBalance} credits.<br/><br/>Thank you for your business!!</p><p>Thank you,<br/><br/><b>Backbone Data Solutions Team</b><br/><b>+1 (760) 376-5994</b></p></div>`,
     });
