@@ -679,10 +679,19 @@ export class OrderService {
         : '';
       const resendText = `${body.resend_remark ?? ''}`.trim();
 
+
+      const client = await this.findNotificationUser(order.createdby);
+
+      const clientName =
+        `${client?.firstname ?? ""} ${client?.lastname ?? ""}`.trim() ||
+        client?.firstname ||
+        client?.username ||
+        order.createdby ||
+        "Client";
       await this.sendOrderEmail({
         order,
         subject: `${replaceExisting ? 'Updated Completed' : 'Completed'} File #${order.id} - ${subjectAddress}`,
-        html: `<div><p>Hello ${order.createdby || 'Client'},<br/><br/>The following appraisal order has been completed.<br/>Please login and download files from dashboard.<br/><br/>File #-${order.id}<br/><br/>Address: ${subjectAddress}<br/><br/>${remark || resendText ? `Remark: ${remark || resendText}<br/><br/>` : ''}${summaryHtml}</p><p>Thank you,<br/><br/><b>Backbone Data Solutions Team</b><br/><b>+1 (760) 376-5994</b></p></div>`,
+        html: `<div><p>Hello ${clientName || 'Client'},<br/><br/>The following appraisal order has been completed.<br/>Please login and download files from dashboard.<br/><br/>File #-${order.id}<br/><br/>Address: ${subjectAddress}<br/><br/>${remark || resendText ? `Remark: ${remark || resendText}<br/><br/>` : ''}${summaryHtml}</p><p>Thank you,<br/><br/><b>Backbone Data Solutions Team</b><br/><b>+1 (760) 376-5994</b></p></div>`,
         extraEmails: body.extra_emails,
         attachments: completedFiles
           .filter((item) => `${item.filepath ?? ''}`.trim())

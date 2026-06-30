@@ -412,69 +412,6 @@ export class UserService {
       html: emailBody,
     });
 
-    try {
-      await emailTransporter.sendMail({
-        from: process.env.SMTP_FROM || process.env.SMTP_USER,
-
-        to:
-          process.env.SMTP_REGISTRATION_NOTIFY_TO ||
-          'samp@backbonedatasolutions.com',
-
-        bcc: (process.env.SMTP_BCC || '')
-          .split(',')
-          .map((email) => email.trim())
-          .filter(Boolean),
-
-        subject: 'New Client Registration',
-
-        html: `
-      <div style="font-family:Arial,sans-serif">
-
-        <h2>New Client Registration</h2>
-
-        <table cellpadding="6" cellspacing="0">
-          <tr>
-            <td><strong>First Name</strong></td>
-            <td>${user.firstname ?? '-'}</td>
-          </tr>
-
-          <tr>
-            <td><strong>Last Name</strong></td>
-            <td>${user.lastname ?? '-'}</td>
-          </tr>
-
-          <tr>
-            <td><strong>Company</strong></td>
-            <td>${user.companyname ?? '-'}</td>
-          </tr>
-
-          <tr>
-            <td><strong>Email</strong></td>
-            <td>${user.email ?? '-'}</td>
-          </tr>
-
-          <tr>
-            <td><strong>Username</strong></td>
-            <td>${user.username ?? '-'}</td>
-          </tr>
-
-          <tr>
-            <td><strong>Mobile</strong></td>
-            <td>${user.mobileno ?? '-'}</td>
-          </tr>
-        </table>
-
-        <br/>
-
-        A new client has successfully registered on Backbone Data Solutions.
-
-      </div>
-    `,
-      });
-    } catch (error) {
-      console.error('Registration notification email failed:', error);
-    }
-
     await this.userRepository.update(user.id, {
       sendmail: new Date().toISOString(),
     });
