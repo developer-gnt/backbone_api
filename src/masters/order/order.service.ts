@@ -37,7 +37,7 @@ export class OrderService {
     private readonly chatRepo: Repository<ChatMessage>,
     private readonly tatPricingService: TatPricingService,
     private readonly dataSource: DataSource,
-  ) { }
+  ) {}
 
   private toNullableNumber(value: unknown): number | null {
     if (value === undefined || value === null || `${value}`.trim() === '') {
@@ -61,7 +61,9 @@ export class OrderService {
       mimetype: string;
     }> = [],
   ) {
-    const actor = await this.userRepo.findOne({ where: { id: Number(user.id) } });
+    const actor = await this.userRepo.findOne({
+      where: { id: Number(user.id) },
+    });
 
     if (!actor) {
       throw new NotFoundException('Authenticated user could not be found');
@@ -70,8 +72,11 @@ export class OrderService {
     const requestedCreatedBy = dto.createdby?.trim();
     const createdForUser = requestedCreatedBy
       ? await this.userRepo.findOne({
-        where: [{ username: requestedCreatedBy }, { email: requestedCreatedBy }],
-      })
+          where: [
+            { username: requestedCreatedBy },
+            { email: requestedCreatedBy },
+          ],
+        })
       : null;
 
     const walletOwner =
@@ -81,7 +86,11 @@ export class OrderService {
           ? createdForUser
           : null;
 
-    if ((actor.role ?? '').toLowerCase() !== 'client' && requestedCreatedBy && !walletOwner) {
+    if (
+      (actor.role ?? '').toLowerCase() !== 'client' &&
+      requestedCreatedBy &&
+      !walletOwner
+    ) {
       throw new BadRequestException(
         'Please enter a valid client username or email before placing the order.',
       );
@@ -171,7 +180,9 @@ export class OrderService {
 
       const savedOrder = await orders.save(order);
 
-      let updatedBalance = Number(walletOwner?.wallete_balance ?? actor.wallete_balance ?? 0);
+      let updatedBalance = Number(
+        walletOwner?.wallete_balance ?? actor.wallete_balance ?? 0,
+      );
 
       if (walletOwner && debitAmount > 0) {
         updatedBalance -= debitAmount;
@@ -234,8 +245,7 @@ export class OrderService {
 
         <br/><br/>
 
-        Package:
-        ${savedOrder.package ?? ''}
+        
 
         <br/><br/>
 
@@ -333,7 +343,10 @@ export class OrderService {
       msg_time: item.msg_time,
     }));
 
-    if (order.message && !history.some((entry) => entry.message === order.message)) {
+    if (
+      order.message &&
+      !history.some((entry) => entry.message === order.message)
+    ) {
       history.push({
         order_id: order.id,
         message: order.message,
@@ -344,7 +357,10 @@ export class OrderService {
       });
     }
 
-    if (order.reply && !history.some((entry) => entry.message === order.reply)) {
+    if (
+      order.reply &&
+      !history.some((entry) => entry.message === order.reply)
+    ) {
       history.push({
         order_id: order.id,
         message: order.reply,
@@ -357,7 +373,8 @@ export class OrderService {
 
     history.sort(
       (a, b) =>
-        new Date(a.msg_time ?? 0).getTime() - new Date(b.msg_time ?? 0).getTime(),
+        new Date(a.msg_time ?? 0).getTime() -
+        new Date(b.msg_time ?? 0).getTime(),
     );
 
     return {
@@ -378,14 +395,15 @@ export class OrderService {
     }
 
     const order = await this.ensureOrderAccess(id, user);
-    const senderRole = (user.role ?? '').toLowerCase() === 'client' ? 'client' : 'team';
+    const senderRole =
+      (user.role ?? '').toLowerCase() === 'client' ? 'client' : 'team';
     const senderName =
       senderRole === 'team'
         ? 'Backbone Data Solutions'
         : `${user.firstname ?? ''} ${user.lastname ?? ''}`.trim() ||
-        user.username ||
-        user.companyname ||
-        'Client';
+          user.username ||
+          user.companyname ||
+          'Client';
 
     await this.chatRepo.save(
       this.chatRepo.create({
@@ -479,7 +497,13 @@ export class OrderService {
         from: process.env.SMTP_FROM || process.env.SMTP_USER,
         to: Array.from(to),
         cc: this.splitEmails(client.cc),
-        bcc: Array.from(new Set([...this.splitEmails(client.bcc), process.env.SMTP_ORDER_NOTIFY_TO || 'orders@backbonedatasolutions.com'])),
+        bcc: Array.from(
+          new Set([
+            ...this.splitEmails(client.bcc),
+            process.env.SMTP_ORDER_NOTIFY_TO ||
+              'orders@backbonedatasolutions.com',
+          ]),
+        ),
         subject: options.subject,
         html: options.html,
         attachments: options.attachments,
@@ -505,7 +529,12 @@ export class OrderService {
       return [] as Download[];
     }
 
-    const uploadDir = join(process.cwd(), 'UplodedOrderFiles', 'orders', `${orderId}`);
+    const uploadDir = join(
+      process.cwd(),
+      'UplodedOrderFiles',
+      'orders',
+      `${orderId}`,
+    );
     await mkdir(uploadDir, { recursive: true });
 
     let nextId = await getNextNumericId(downloads);
@@ -555,7 +584,13 @@ export class OrderService {
       return [] as CompletedDownload[];
     }
 
-    const uploadDir = join(process.cwd(), 'UplodedOrderFiles', 'orders', `${orderId}`, 'completed');
+    const uploadDir = join(
+      process.cwd(),
+      'UplodedOrderFiles',
+      'orders',
+      `${orderId}`,
+      'completed',
+    );
     await mkdir(uploadDir, { recursive: true });
 
     let nextId = await getNextNumericId(completedRepo);
@@ -638,9 +673,11 @@ export class OrderService {
     }> = [],
   ) {
     const order = await this.findOne(id);
-    const replaceExisting = `${body.replace_existing ?? ''}`.trim().toLowerCase() === 'true';
+    const replaceExisting =
+      `${body.replace_existing ?? ''}`.trim().toLowerCase() === 'true';
     const remark = `${body.emp_remark ?? body.resend_remark ?? ''}`.trim();
-    const sendCompletedEmail = `${body.complete_notification_email ?? 'Yes'}`.trim() || 'Yes';
+    const sendCompletedEmail =
+      `${body.complete_notification_email ?? 'Yes'}`.trim() || 'Yes';
 
     await this.dataSource.transaction(async (manager) => {
       const orders = manager.getRepository(Order);
@@ -654,7 +691,12 @@ export class OrderService {
         modify_date: new Date(),
       });
 
-      await this.saveCompletedAttachments(manager, id, attachments, replaceExisting);
+      await this.saveCompletedAttachments(
+        manager,
+        id,
+        attachments,
+        replaceExisting,
+      );
 
       if (client) {
         await users.update(client.id, {
@@ -668,7 +710,10 @@ export class OrderService {
       order: { id: 'DESC' },
     });
 
-    if (sendCompletedEmail.toLowerCase() === 'yes' || `${body.extra_emails ?? ''}`.trim()) {
+    if (
+      sendCompletedEmail.toLowerCase() === 'yes' ||
+      `${body.extra_emails ?? ''}`.trim()
+    ) {
       const subjectAddress = order.subject_address || '';
       const summaryItems = `${body.summary_notes ?? ''}`
         .split(/\r?\n|,/)
@@ -679,15 +724,14 @@ export class OrderService {
         : '';
       const resendText = `${body.resend_remark ?? ''}`.trim();
 
-
       const client = await this.findNotificationUser(order.createdby);
 
       const clientName =
-        `${client?.firstname ?? ""} ${client?.lastname ?? ""}`.trim() ||
+        `${client?.firstname ?? ''} ${client?.lastname ?? ''}`.trim() ||
         client?.firstname ||
         client?.username ||
         order.createdby ||
-        "Client";
+        'Client';
       await this.sendOrderEmail({
         order,
         subject: `${replaceExisting ? 'Updated Completed' : 'Completed'} File #${order.id} - ${subjectAddress}`,
@@ -720,11 +764,13 @@ export class OrderService {
       mimetype: string;
     }> = [],
   ) {
-    const currentOrder = user ? await this.ensureOrderAccess(id, user) : await this.findOne(id);
+    const currentOrder = user
+      ? await this.ensureOrderAccess(id, user)
+      : await this.findOne(id);
     const normalizedFeedbackRating =
       dto.feedback_rating !== undefined &&
-        dto.feedback_rating !== null &&
-        `${dto.feedback_rating}` !== ''
+      dto.feedback_rating !== null &&
+      `${dto.feedback_rating}` !== ''
         ? Number(dto.feedback_rating)
         : undefined;
 
@@ -733,28 +779,35 @@ export class OrderService {
       ...dtoWithoutMeta,
       tat_package_id:
         dto.tat_package_id !== undefined &&
-          dto.tat_package_id !== null &&
-          `${dto.tat_package_id}` !== ''
+        dto.tat_package_id !== null &&
+        `${dto.tat_package_id}` !== ''
           ? Number(dto.tat_package_id)
           : undefined,
       tat_hours:
-        dto.tat_hours !== undefined && dto.tat_hours !== null && `${dto.tat_hours}` !== ''
+        dto.tat_hours !== undefined &&
+        dto.tat_hours !== null &&
+        `${dto.tat_hours}` !== ''
           ? Number(dto.tat_hours)
           : undefined,
       charged_amount:
         dto.charged_amount !== undefined &&
-          dto.charged_amount !== null &&
-          `${dto.charged_amount}` !== ''
+        dto.charged_amount !== null &&
+        `${dto.charged_amount}` !== ''
           ? Number(dto.charged_amount)
           : undefined,
       amount:
-        dto.amount !== undefined && dto.amount !== null && `${dto.amount}` !== ''
+        dto.amount !== undefined &&
+        dto.amount !== null &&
+        `${dto.amount}` !== ''
           ? Number(dto.amount)
           : undefined,
       feedback_rating: normalizedFeedbackRating,
       modify_date: new Date(),
       modifyby:
-        user?.username || user?.email || currentOrder.modifyby || currentOrder.createdby,
+        user?.username ||
+        user?.email ||
+        currentOrder.modifyby ||
+        currentOrder.createdby,
     };
 
     await this.orderRepo.update(Number(id), payload);
@@ -767,11 +820,60 @@ export class OrderService {
           : [];
 
       await this.dataSource.transaction(async (manager) => {
-        await this.saveWorkingAttachments(manager, id, attachments, attachmentTypes);
+        await this.saveWorkingAttachments(
+          manager,
+          id,
+          attachments,
+          attachmentTypes,
+        );
       });
     }
 
-    return this.findOne(id);
+    const updatedOrder = await this.findOne(id);
+
+    await this.sendOrderEmail({
+      order: updatedOrder,
+      subject: `Order Updated File #${updatedOrder.id} - ${updatedOrder.subject_address ?? ''}`,
+      html: `
+    <div>
+      <p>
+        Hello ${updatedOrder.createdby},
+
+        <br/><br/>
+
+        Your appraisal order has been successfully updated.
+
+        <br/><br/>
+
+        File #${updatedOrder.id}
+
+        <br/><br/>
+
+        Address:
+        ${updatedOrder.subject_address ?? ''}
+
+        <br/><br/>
+
+        Your requested changes have been saved successfully.
+
+      </p>
+
+      <p>
+        Thank you,
+
+        <br/><br/>
+
+        <b>Backbone Data Solutions Team</b>
+
+        <br/>
+
+        +1 (760) 376-5994
+      </p>
+    </div>
+  `,
+    });
+
+    return updatedOrder;
   }
 
   async submitFeedback(
@@ -810,8 +912,8 @@ export class OrderService {
 
     const smtpConfigured = Boolean(
       process.env.SMTP_HOST &&
-      process.env.SMTP_USER &&
-      process.env.SMTP_PASSWORD,
+        process.env.SMTP_USER &&
+        process.env.SMTP_PASSWORD,
     );
 
     if (smtpConfigured) {
@@ -850,7 +952,9 @@ export class OrderService {
         .map((value) => `${value ?? ''}`.trim().toLowerCase())
         .filter(Boolean);
 
-      if (!identifiers.includes(`${order.createdby ?? ''}`.trim().toLowerCase())) {
+      if (
+        !identifiers.includes(`${order.createdby ?? ''}`.trim().toLowerCase())
+      ) {
         throw new ForbiddenException('You do not have access to this document');
       }
     }
@@ -1017,7 +1121,10 @@ export class OrderService {
       modify_date: new Date(),
     });
 
-    if (dto.reply?.trim() && dto.reply.trim() !== `${currentOrder.reply ?? ''}`.trim()) {
+    if (
+      dto.reply?.trim() &&
+      dto.reply.trim() !== `${currentOrder.reply ?? ''}`.trim()
+    ) {
       await this.chatRepo.save(
         this.chatRepo.create({
           order_id: currentOrder.id,
@@ -1046,7 +1153,9 @@ export class OrderService {
       .map((value) => `${value ?? ''}`.trim().toLowerCase())
       .filter(Boolean);
 
-    if (!identifiers.includes(`${order.createdby ?? ''}`.trim().toLowerCase())) {
+    if (
+      !identifiers.includes(`${order.createdby ?? ''}`.trim().toLowerCase())
+    ) {
       throw new ForbiddenException('You do not have access to this order');
     }
 
