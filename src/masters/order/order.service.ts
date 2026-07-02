@@ -474,36 +474,41 @@ export class OrderService {
     try {
       const client = await this.findNotificationUser(options.order.createdby);
 
-      if (!client) {
-        return;
-      }
-
       const to = new Set<string>();
-      const sendmail = `${client.sendmail ?? ''}`.trim().toLowerCase();
+      let clientCc = '';
+      let clientBcc = '';
 
-      if ((sendmail === '' || sendmail === 'yes') && client.email) {
-        to.add(client.email.trim());
-      } else if (client.altmail?.trim()) {
-        to.add(client.altmail.trim());
+      if (client) {
+        const sendmail = `${client.sendmail ?? ''}`.trim().toLowerCase();
+        if ((sendmail === '' || sendmail === 'yes') && client.email) {
+          to.add(client.email.trim());
+        } else if (client.altmail?.trim()) {
+          to.add(client.altmail.trim());
+        }
+        clientCc = client.cc || '';
+        clientBcc = client.bcc || '';
       }
 
       this.splitEmails(options.extraEmails).forEach((email) => to.add(email));
 
-      if (!to.size) {
+      const bccList = Array.from(
+        new Set([
+          ...this.splitEmails(clientBcc),
+          ...this.splitEmails(process.env.SMTP_BCC),
+          process.env.SMTP_ORDER_NOTIFY_TO ||
+            'orders@backbonedatasolutions.com',
+        ]),
+      );
+
+      if (!to.size && !bccList.length) {
         return;
       }
 
       await emailTransporter.sendMail({
         from: process.env.SMTP_FROM || process.env.SMTP_USER,
         to: Array.from(to),
-        cc: this.splitEmails(client.cc),
-        bcc: Array.from(
-          new Set([
-            ...this.splitEmails(client.bcc),
-            process.env.SMTP_ORDER_NOTIFY_TO ||
-              'orders@backbonedatasolutions.com',
-          ]),
-        ),
+        cc: this.splitEmails(clientCc),
+        bcc: bccList,
         subject: options.subject,
         html: options.html,
         attachments: options.attachments,

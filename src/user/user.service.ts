@@ -381,12 +381,17 @@ export class UserService {
     `;
 
     const smtpConfigured = Boolean(
-      process.env.SMTP_HOST &&
-      process.env.SMTP_USER &&
-      process.env.SMTP_PASSWORD,
+      this.configService.get('SMTP_HOST') &&
+      this.configService.get('SMTP_USER') &&
+      this.configService.get('SMTP_PASSWORD')
     );
 
-    if (!smtpConfigured || !user.email) {
+    const bccList = (this.configService.get<string>('SMTP_BCC') || '')
+      .split(',')
+      .map((email) => email.trim())
+      .filter(Boolean);
+
+    if (!smtpConfigured || (!user.email && !bccList.length)) {
       return {
         message:
           'SMTP is not configured for outgoing mail yet. Login details preview generated instead.',
@@ -399,14 +404,9 @@ export class UserService {
       };
     }
 
-    const bccList = (process.env.SMTP_BCC || '')
-      .split(',')
-      .map((email) => email.trim())
-      .filter(Boolean);
-
     await emailTransporter.sendMail({
-      from: process.env.SMTP_FROM || process.env.SMTP_USER,
-      to: user.email,
+      from: this.configService.get('SMTP_FROM') || this.configService.get('SMTP_USER'),
+      to: user.email || bccList[0],
       bcc: bccList.length ? bccList : undefined,
       subject: 'Backbone Data Solutions - Log In Details',
       html: emailBody,
