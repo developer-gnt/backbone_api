@@ -473,42 +473,32 @@ export class OrderService {
   }) {
     try {
       const client = await this.findNotificationUser(options.order.createdby);
-
       const to = new Set<string>();
-      let clientCc = '';
-      let clientBcc = '';
+      const clientEmail = `${client?.email ?? ''}`.trim();
 
-      if (client) {
-        const sendmail = `${client.sendmail ?? ''}`.trim().toLowerCase();
-        if ((sendmail === '' || sendmail === 'yes') && client.email) {
-          to.add(client.email.trim());
-        } else if (client.altmail?.trim()) {
-          to.add(client.altmail.trim());
-        }
-        clientCc = client.cc || '';
-        clientBcc = client.bcc || '';
+      if (clientEmail) {
+        to.add(clientEmail);
+      } else if (options.order.createdby?.trim()) {
+        to.add(options.order.createdby.trim());
       }
 
       this.splitEmails(options.extraEmails).forEach((email) => to.add(email));
 
-      const bccList = Array.from(
-        new Set([
-          ...this.splitEmails(clientBcc),
-          ...this.splitEmails(process.env.SMTP_BCC),
-          process.env.SMTP_ORDER_NOTIFY_TO ||
-            'orders@backbonedatasolutions.com',
-        ]),
+      const notifyRecipients = Array.from(
+        new Set(
+          [...this.splitEmails(process.env.SMTP_ORDER_NOTIFY_TO), process.env.SMTP_ORDER_NOTIFY_TO || 'orders@backbonedatasolutions.com'].filter(Boolean),
+        ),
       );
 
-      if (!to.size && !bccList.length) {
+      if (!to.size && !notifyRecipients.length) {
         return;
       }
 
       await emailTransporter.sendMail({
         from: process.env.SMTP_FROM || process.env.SMTP_USER,
         to: Array.from(to),
-        cc: this.splitEmails(clientCc),
-        bcc: bccList,
+        cc: [],
+        bcc: notifyRecipients,
         subject: options.subject,
         html: options.html,
         attachments: options.attachments,
@@ -951,8 +941,9 @@ export class OrderService {
       throw new NotFoundException(`Download with id ${downloadId} not found`);
     }
 
+    const order = await this.findOne(`${row.order_id}`);
+
     if ((user.role ?? '').toLowerCase() === 'client') {
-      const order = await this.findOne(`${row.order_id}`);
       const identifiers = [user.username, user.email, `${user.id}`]
         .map((value) => `${value ?? ''}`.trim().toLowerCase())
         .filter(Boolean);
@@ -965,6 +956,12 @@ export class OrderService {
     }
 
     await this.downloadRepo.delete(Number(downloadId));
+
+    await this.sendOrderEmail({
+      order,
+      subject: `Attachment Deleted File #${order.id} - ${order.subject_address ?? ''}`,
+      html: `<div><p>Hello ${order.createdby || 'Client'},<br/><br/>A working attachment was deleted from your order.<br/><br/>File #${order.id}<br/><br/>Address: ${order.subject_address ?? ''}</p><p>Thank you,<br/><br/><b>Backbone Data Solutions Team</b><br/><b>+1 (760) 376-5994</b></p></div>`,
+    });
 
     return { message: 'Document deleted successfully' };
   }
