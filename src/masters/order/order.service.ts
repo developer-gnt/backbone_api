@@ -528,7 +528,7 @@ export class OrderService {
       const ccList = Array.from(new Set(this.splitEmails(clientCc)));
       const bccList = Array.from(
         new Set([
-          ...this.splitEmails(process.env.SMTP_REGISTRATION_NOTIFY_TO),
+          ...this.splitEmails(process.env.SMTP_ORDER_NOTIFY_TO),
           ...this.splitEmails(clientBcc),
         ]),
       );
