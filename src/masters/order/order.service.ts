@@ -452,8 +452,17 @@ export class OrderService {
       return null;
     }
 
+    const whereConditions: any[] = [
+      { email: normalized },
+      { username: normalized },
+    ];
+
+    if (/^\d+$/.test(normalized)) {
+      whereConditions.push({ id: Number(normalized) });
+    }
+
     return this.userRepo.findOne({
-      where: [{ email: normalized }, { username: normalized }],
+      where: whereConditions,
     });
   }
 
@@ -472,39 +481,105 @@ export class OrderService {
     attachments?: Array<{ filename?: string; path: string }>;
   }) {
     try {
-      const client = await this.findNotificationUser(options.order.createdby);
-      const to = new Set<string>();
-      const clientEmail = `${client?.email ?? ''}`.trim();
+      console.log('========== ORDER EMAIL ==========');
+      console.log('Order ID:', options.order.id);
+      console.log('Created By:', options.order.createdby);
 
-      if (clientEmail) {
-        to.add(clientEmail);
-      } else if (options.order.createdby?.trim()) {
-        to.add(options.order.createdby.trim());
+      const client = await this.findNotificationUser(options.order.createdby);
+
+      console.log('Client Found:', client);
+
+      const to = new Set<string>();
+
+      let clientCc = '';
+      let clientBcc = '';
+
+      if (client) {
+        const sendmail = `${client.sendmail ?? ''}`.trim().toLowerCase();
+
+        console.log('Raw Sendmail:', client.sendmail);
+        console.log('Normalized Sendmail:', sendmail);
+        console.log('Primary Email:', client.email);
+        console.log('Alternate Email:', client.altmail);
+
+        // Add primary email unless sendmail is explicitly "no"
+        if (client.email && sendmail !== 'no') {
+          this.splitEmails(client.email).forEach((email) => to.add(email));
+        }
+
+        // Fallback to alternate email only if no primary email was added
+        if (!to.size && client.altmail) {
+          this.splitEmails(client.altmail).forEach((email) => to.add(email));
+        }
+
+        clientCc = client.cc ?? '';
+        clientBcc = client.bcc ?? '';
+      } else {
+        console.warn(
+          `No client found for createdby = ${options.order.createdby}`,
+        );
       }
 
+      // Extra recipients
       this.splitEmails(options.extraEmails).forEach((email) => to.add(email));
 
-      const notifyRecipients = Array.from(
-        new Set(
-          [...this.splitEmails(process.env.SMTP_ORDER_NOTIFY_TO), process.env.SMTP_ORDER_NOTIFY_TO || 'orders@backbonedatasolutions.com'].filter(Boolean),
-        ),
+      // Remove duplicates
+      const toList = Array.from(new Set(Array.from(to)));
+      const ccList = Array.from(new Set(this.splitEmails(clientCc)));
+      const bccList = Array.from(
+        new Set([
+          ...this.splitEmails(process.env.SMTP_REGISTRATION_NOTIFY_TO),
+          ...this.splitEmails(clientBcc),
+        ]),
       );
 
-      if (!to.size && !notifyRecipients.length) {
-        return;
-      }
-
-      await emailTransporter.sendMail({
+      const mailOptions = {
         from: process.env.SMTP_FROM || process.env.SMTP_USER,
-        to: Array.from(to),
-        cc: [],
-        bcc: notifyRecipients,
+        to: toList,
+        cc: ccList,
+        bcc: bccList,
         subject: options.subject,
         html: options.html,
         attachments: options.attachments,
-      });
+      };
+
+      console.log('========== MAIL OPTIONS ==========');
+      console.log(JSON.stringify(mailOptions, null, 2));
+
+      if (
+        !mailOptions.to.length &&
+        !mailOptions.cc.length &&
+        !mailOptions.bcc.length
+      ) {
+        console.warn('No recipients found. Email skipped.');
+        return;
+      }
+
+      const info = await emailTransporter.sendMail(mailOptions);
+
+      console.log('========== SMTP RESPONSE ==========');
+      console.log('Accepted:', info.accepted);
+      console.log('Rejected:', info.rejected);
+      console.log('Pending:', info.pending);
+      console.log('Envelope:', info.envelope);
+      console.log('Message ID:', info.messageId);
+      console.log('Response:', info.response);
+
+      // Verify expected recipients
+      const expectedRecipients = [...toList, ...ccList, ...bccList];
+      const acceptedRecipients = (info.accepted || []).map((email) =>
+        String(email).toLowerCase(),
+      );
+
+      const missingRecipients = expectedRecipients.filter(
+        (email) => !acceptedRecipients.includes(email.toLowerCase()),
+      );
+
+      if (missingRecipients.length) {
+        console.warn('Recipients not accepted by SMTP:', missingRecipients);
+      }
     } catch (error) {
-      console.log('[Order email notification failed]', error);
+      console.error('[Order email notification failed]', error);
     }
   }
 

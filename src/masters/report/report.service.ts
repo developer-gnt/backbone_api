@@ -130,7 +130,7 @@ export class ReportService {
     const clients = await query.getMany();
     const orders = await this.orderRepo.find({ select: ['id', 'createdby'] });
     const orderMap = new Map<string, number>();
-    
+
     orders.forEach((order) => {
       const key = `${order.createdby ?? ''}`.toLowerCase();
       orderMap.set(key, (orderMap.get(key) ?? 0) + 1);
@@ -296,7 +296,7 @@ export class ReportService {
 
     const totalCount = await query.getCount();
     const orders = await query.take(safePageSize).getMany();
-    
+
     // Fetch users only once with selective properties
     const userIds = new Set<number>();
     orders.forEach((order) => {
@@ -456,17 +456,21 @@ export class ReportService {
   ) {
     const query = this.transactionRepo.createQueryBuilder('transaction');
 
-    // Role-based filtering
-    const allowedUsernames = (currentUser?.role ?? '').toLowerCase() === 'client'
-      ? [currentUser?.username, currentUser?.email]
-        .map((value) => `${value ?? ''}`.trim().toLowerCase())
-        .filter(Boolean)
-      : [];
+    // Client can only see their own transactions
+    const allowedUsernames =
+      (currentUser?.role ?? '').toLowerCase() === 'client'
+        ? [currentUser?.username, currentUser?.email]
+          .map((value) => `${value ?? ''}`.trim().toLowerCase())
+          .filter(Boolean)
+        : [];
 
     if (allowedUsernames.length) {
-      query.andWhere('LOWER(COALESCE(transaction.createdby, "")) IN (:...allowedUsernames)', {
-        allowedUsernames,
-      });
+      query.andWhere(
+        "LOWER(COALESCE(transaction.createdby, '')) IN (:...allowedUsernames)",
+        {
+          allowedUsernames,
+        },
+      );
     }
 
     // Status filter
@@ -478,21 +482,41 @@ export class ReportService {
 
     // Username filter
     if (filters?.username?.trim()) {
-      query.andWhere('LOWER(COALESCE(transaction.createdby, "")) = :username', {
-        username: filters.username.trim().toLowerCase(),
-      });
+      query.andWhere(
+        "LOWER(COALESCE(transaction.createdby, '')) = :username",
+        {
+          username: filters.username.trim().toLowerCase(),
+        },
+      );
     }
 
-    // Type filter
+    // Transaction Type filter
     const normalizedType = filters?.type?.trim().toLowerCase() || 'all';
-    if (normalizedType === 'credit') {
-      query.andWhere(
-        '(COALESCE(transaction.transaction_id, "") = "" OR COALESCE(transaction.transaction_id, "") = "0")',
-      );
-    } else if (normalizedType === 'bonus') {
-      query.andWhere('COALESCE(transaction.transaction_id, "") = :bonusId', {
-        bonusId: 'bonus',
-      });
+
+    switch (normalizedType) {
+      case 'credit':
+        query.andWhere(
+          "(COALESCE(transaction.transaction_id, '') = '' OR COALESCE(transaction.transaction_id, '') = '0')",
+        );
+        break;
+
+      case 'bonus':
+        query.andWhere(
+          "LOWER(COALESCE(transaction.transaction_id, '')) = :bonusId",
+          {
+            bonusId: 'bonus',
+          },
+        );
+        break;
+
+      case 'debit':
+        query.andWhere(
+          "LOWER(COALESCE(transaction.mode, '')) = :mode",
+          {
+            mode: 'debit',
+          },
+        );
+        break;
     }
 
     const transactions = await query
@@ -500,35 +524,49 @@ export class ReportService {
       .take(1000)
       .getMany();
 
-    const users = await this.userRepo.find();
-    const orders = await this.orderRepo.find({ select: ['id', 'subject_address'] });
-    const orderMap = new Map(orders.map((order) => [`${order.id}`, order]));
+    const [users, orders] = await Promise.all([
+      this.userRepo.find(),
+      this.orderRepo.find({
+        select: ['id', 'subject_address'],
+      }),
+    ]);
+
+    const orderMap = new Map(
+      orders.map((order) => [`${order.id}`, order]),
+    );
 
     return transactions.map((transaction) => {
-      const createdBy = `${transaction.createdby ?? ''}`.trim().toLowerCase();
+      const createdBy = `${transaction.createdby ?? ''}`
+        .trim()
+        .toLowerCase();
+
       const registration = users.find((user) =>
         [user.username, user.email, `${user.id}`]
           .map((value) => `${value ?? ''}`.trim().toLowerCase())
           .includes(createdBy),
       );
+
       const relatedOrder = transaction.orderid
         ? orderMap.get(`${transaction.orderid}`)
-        : null;
-      const mode = (transaction.mode ?? 'Credit').trim();
+        : undefined;
+
+      const mode = `${transaction.mode ?? 'Credit'}`.trim();
 
       return {
         ...transaction,
-        firstname: registration?.firstname,
-        lastname: registration?.lastname,
-        email: registration?.email,
-        wallete_balance: registration?.wallete_balance,
-        client_name: `${registration?.firstname ?? ''} ${registration?.lastname ?? ''}`.trim(),
+        firstname: registration?.firstname ?? '',
+        lastname: registration?.lastname ?? '',
+        email: registration?.email ?? '',
+        wallete_balance: registration?.wallete_balance ?? 0,
+        client_name:
+          `${registration?.firstname ?? ''} ${registration?.lastname ?? ''}`.trim(),
         order_id: transaction.orderid,
         subject_address: relatedOrder?.subject_address ?? '',
         transaction_type:
           mode.toLowerCase() === 'debit'
             ? 'Debit'
-            : !transaction.transaction_id || transaction.transaction_id === '0'
+            : !transaction.transaction_id ||
+              transaction.transaction_id === '0'
               ? 'Credit'
               : transaction.transaction_id,
       };
