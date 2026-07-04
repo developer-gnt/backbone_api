@@ -771,7 +771,47 @@ export class OrderService {
       });
     }
 
-    return this.findOne(id);
+    const updatedOrder = await this.findOne(id);
+
+    await this.sendOrderEmail({
+      order: updatedOrder,
+      subject: `Order Updated - File #${updatedOrder.id}`,
+      html: `
+    <div style="font-family:Arial,sans-serif;">
+      <p>Hello,</p>
+
+      <p>
+        Your appraisal order has been updated successfully.
+      </p>
+
+      <table cellpadding="6">
+        <tr>
+          <td><strong>File Number</strong></td>
+          <td>${updatedOrder.id}</td>
+        </tr>
+
+        <tr>
+          <td><strong>Property Address</strong></td>
+          <td>${updatedOrder.subject_address ?? "-"}</td>
+        </tr>
+
+        <tr>
+          <td><strong>Status</strong></td>
+          <td>${updatedOrder.status ?? "-"}</td>
+        </tr>
+      </table>
+
+      <br/>
+
+      <p>
+        Thank you,<br/>
+        <strong>Backbone Data Solutions Team</strong>
+      </p>
+    </div>
+  `,
+    });
+
+    return updatedOrder;
   }
 
   async submitFeedback(

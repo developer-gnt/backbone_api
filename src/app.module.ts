@@ -28,9 +28,17 @@ import { APP_GUARD } from '@nestjs/core';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 import { RolesGuard } from './packages/authorization/roles.guard';
 import { PaypalModule } from './paypal/paypal.module';
+import { MulterModule } from '@nestjs/platform-express';
 
 @Module({
   imports: [
+
+    MulterModule.register({
+      limits: {
+        fileSize: 2 * 1024 * 1024 * 1024,
+        files: 200,
+      },
+    }),
     ConfigModule.forRoot({
       isGlobal: true,
       load: [typeorm],

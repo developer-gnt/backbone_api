@@ -3,10 +3,24 @@ import { AppModule } from './app.module';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import * as express from 'express';
 import { join } from 'path';
+import bodyParser from 'body-parser';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const port = Number(process.env.PORT ?? 3001);
+
+  app.use(
+    bodyParser.json({
+      limit: '2gb',
+    }),
+  );
+
+  app.use(
+    bodyParser.urlencoded({
+      limit: '2gb',
+      extended: true,
+    }),
+  );
 
   app.enableCors({
     origin: true,
@@ -47,7 +61,7 @@ async function bootstrap() {
     },
   });
 
-await app.listen(port, '0.0.0.0');
+  await app.listen(port, '0.0.0.0');
   console.log(`Backbone API running on http://localhost:${port}`);
   console.log(`Swagger docs ready at http://localhost:${port}/api`);
 }
