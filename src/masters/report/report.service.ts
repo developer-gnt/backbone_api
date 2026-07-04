@@ -310,19 +310,29 @@ export class ReportService {
       : [];
 
     const usernameMap = new Map<string, Users>();
-    await this.userRepo
-      .createQueryBuilder('user')
-      .where('user.username IN (:...usernames)', {
-        usernames: orders
-          .map((o) => o.createdby)
-          .filter((c): c is string => Boolean(c)),
-      })
-      .getMany()
-      .then((dbUsers) => {
-        dbUsers.forEach((u) => {
-          if (u.username) usernameMap.set(u.username.toLowerCase(), u);
-        });
+
+    const usernames = [
+      ...new Set(
+        orders
+          .map((o) => o.createdby?.trim())
+          .filter((c): c is string => !!c)
+      ),
+    ];
+
+    if (usernames.length > 0) {
+      const dbUsers = await this.userRepo
+        .createQueryBuilder('user')
+        .where('user.username IN (:...usernames)', {
+          usernames,
+        })
+        .getMany();
+
+      dbUsers.forEach((u) => {
+        if (u.username) {
+          usernameMap.set(u.username.toLowerCase(), u);
+        }
       });
+    }
 
     users.forEach((u) => {
       if (u.username) usernameMap.set(u.username.toLowerCase(), u);
