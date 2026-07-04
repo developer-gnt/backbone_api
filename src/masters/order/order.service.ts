@@ -903,7 +903,7 @@ export class OrderService {
 
     await this.sendOrderEmail({
       order: updatedOrder,
-      subject: `Order Updated File #${updatedOrder.id} - ${updatedOrder.subject_address ?? ''}`,
+      subject: `Order Edited - File #${updatedOrder.id} - ${updatedOrder.subject_address ?? ''}`,
       html: `
     <div>
       <p>
