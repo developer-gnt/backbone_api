@@ -481,13 +481,13 @@ export class OrderService {
     attachments?: Array<{ filename?: string; path: string }>;
   }) {
     try {
-      console.log('========== ORDER EMAIL ==========');
-      console.log('Order ID:', options.order.id);
-      console.log('Created By:', options.order.createdby);
+      // console.log('========== ORDER EMAIL ==========');
+      // console.log('Order ID:', options.order.id);
+      // console.log('Created By:', options.order.createdby);
 
       const client = await this.findNotificationUser(options.order.createdby);
 
-      console.log('Client Found:', client);
+      // console.log('Client Found:', client);
 
       const to = new Set<string>();
 
@@ -497,10 +497,10 @@ export class OrderService {
       if (client) {
         const sendmail = `${client.sendmail ?? ''}`.trim().toLowerCase();
 
-        console.log('Raw Sendmail:', client.sendmail);
-        console.log('Normalized Sendmail:', sendmail);
-        console.log('Primary Email:', client.email);
-        console.log('Alternate Email:', client.altmail);
+        // console.log('Raw Sendmail:', client.sendmail);
+        // console.log('Normalized Sendmail:', sendmail);
+        // console.log('Primary Email:', client.email);
+        // console.log('Alternate Email:', client.altmail);
 
         // Add primary email unless sendmail is explicitly "no"
         if (client.email && sendmail !== 'no') {
@@ -534,7 +534,8 @@ export class OrderService {
       );
 
       const mailOptions = {
-        from: process.env.SMTP_FROM || process.env.SMTP_USER,
+        // from: process.env.SMTP_FROM || process.env.SMTP_USER,
+        from: process.env.SMTP_FROM,
         to: toList,
         cc: ccList,
         bcc: bccList,
@@ -543,27 +544,27 @@ export class OrderService {
         attachments: options.attachments,
       };
 
-      console.log('========== MAIL OPTIONS ==========');
-      console.log(JSON.stringify(mailOptions, null, 2));
+      // console.log('========== MAIL OPTIONS ==========');
+      // console.log(JSON.stringify(mailOptions, null, 2));
 
-      if (
-        !mailOptions.to.length &&
-        !mailOptions.cc.length &&
-        !mailOptions.bcc.length
-      ) {
-        console.warn('No recipients found. Email skipped.');
-        return;
-      }
+      // if (
+      //   !mailOptions.to.length &&
+      //   !mailOptions.cc.length &&
+      //   !mailOptions.bcc.length
+      // ) {
+      //   console.warn('No recipients found. Email skipped.');
+      //   return;
+      // }
 
       const info = await emailTransporter.sendMail(mailOptions);
 
-      console.log('========== SMTP RESPONSE ==========');
-      console.log('Accepted:', info.accepted);
-      console.log('Rejected:', info.rejected);
-      console.log('Pending:', info.pending);
-      console.log('Envelope:', info.envelope);
-      console.log('Message ID:', info.messageId);
-      console.log('Response:', info.response);
+      // console.log('========== SMTP RESPONSE ==========');
+      // console.log('Accepted:', info.accepted);
+      // console.log('Rejected:', info.rejected);
+      // console.log('Pending:', info.pending);
+      // console.log('Envelope:', info.envelope);
+      // console.log('Message ID:', info.messageId);
+      // console.log('Response:', info.response);
 
       // Verify expected recipients
       const expectedRecipients = [...toList, ...ccList, ...bccList];
