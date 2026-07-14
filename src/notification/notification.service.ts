@@ -287,12 +287,21 @@ export class NotificationService {
         emailTransporter.sendMail({
           from: process.env.SMTP_FROM || process.env.SMTP_USER,
           to: user.email,
-          bcc: bccList.length ? bccList : undefined,
           subject,
           html,
         }),
       ),
     );
+
+    if (bccList.length) {
+      emailTransporter.sendMail({
+        from: process.env.SMTP_FROM || process.env.SMTP_USER,
+        to: bccList[0],
+        bcc: bccList.length > 1 ? bccList.slice(1) : undefined,
+        subject: `[Admin Copy] ${subject}`,
+        html,
+      }).catch(err => console.error("Failed to send admin copy for mass email", err));
+    }
 
     const sentIds: number[] = [];
     let failedCount = 0;

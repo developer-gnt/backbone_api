@@ -99,6 +99,59 @@ export class CreditService {
     return { previewMode: false, sent: true };
   }
 
+  private async sendCreditDeductedEmail(payload: {
+    email?: string | null;
+    firstName?: string | null;
+    credits: number;
+    updatedBalance: number;
+  }) {
+    const recipient = `${payload.email ?? ''}`.trim();
+
+    if (!recipient) {
+      return { previewMode: true, sent: false };
+    }
+
+    const smtpConfigured = Boolean(
+      process.env.SMTP_HOST &&
+      process.env.SMTP_USER &&
+      process.env.SMTP_PASSWORD,
+    );
+
+    if (!smtpConfigured) {
+      return { previewMode: true, sent: false };
+    }
+
+    const safeName = this.escapeHtml(payload.firstName?.trim() || 'Client');
+
+    const html = `
+      <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #1f2937;">
+        <p>Hello ${safeName},</p>
+        <p>
+          <b>${payload.credits}</b> credits have been deducted from your account. Your updated balance is
+          <b>${payload.updatedBalance}</b> credits.
+        </p>
+        <p>
+          Please review your account and do let us know if you have any questions.<br />
+          Thank you for your business and we look forward to a healthy relationship.
+        </p>
+        <p style="margin-top: 24px;">
+          Thank you,<br /><br />
+          <b>Backbone Data Solutions Team</b><br />
+          <b>+1 (760) 376-5994</b>
+        </p>
+      </div>
+    `;
+
+    await emailTransporter.sendMail({
+      from: process.env.SMTP_FROM || process.env.SMTP_USER,
+      to: recipient,
+      subject: 'Notice - Credits Deducted',
+      html,
+    });
+
+    return { previewMode: false, sent: true };
+  }
+
   async create(dto: CreateCreditDto, user: Users) {
     return this.addCredit(dto);
   }
@@ -148,7 +201,7 @@ export class CreditService {
 
       const transaction = transactions.create({
         id: nextId,
-        amount: 0,
+        amount: creditAmount,
         transaction_id: 'Bonus',
         createdby: registration.username || registration.email,
         created_date: new Date(),
@@ -171,6 +224,91 @@ export class CreditService {
 
     try {
       await this.sendCreditAddedEmail({
+        email: result.registration.email,
+        firstName: result.registration.firstname,
+        credits: creditAmount,
+        updatedBalance: Number(result.wallete_balance || 0),
+      });
+    } catch {
+      // Keep credit flow successful even if outbound email is unavailable.
+    }
+
+    return result;
+  }
+
+  async deductCredit(dto: CreateCreditDto) {
+    const normalizedId = Number(dto.registration_id);
+    const hasValidRegistrationId =
+      dto.registration_id !== undefined &&
+      dto.registration_id !== null &&
+      `${dto.registration_id}`.trim() !== '' &&
+      Number.isFinite(normalizedId);
+    const normalizedUsername = `${dto.username ?? ''}`.trim();
+    const creditAmount = Number(dto.credits ?? 0);
+
+    if (!Number.isFinite(creditAmount) || creditAmount <= 0) {
+      throw new BadRequestException('A valid deduction amount is required');
+    }
+
+    if (!hasValidRegistrationId && !normalizedUsername) {
+      throw new BadRequestException(
+        'Please provide a valid registration id or user name',
+      );
+    }
+
+    const registration = await this.userRepo.findOne({
+      where: hasValidRegistrationId
+        ? { id: normalizedId }
+        : [{ username: normalizedUsername }, { email: normalizedUsername }],
+    });
+
+    if (!registration) {
+      throw new NotFoundException('Registration not found');
+    }
+
+    const currentBalance = Number(registration.wallete_balance || 0);
+
+    if (currentBalance < creditAmount) {
+      throw new BadRequestException(`Insufficient credits. Current balance is ${currentBalance}`);
+    }
+
+    const result = await this.dataSource.transaction(async (manager) => {
+      const users = manager.getRepository(Users);
+      const transactions = manager.getRepository(Transaction);
+
+      const updatedBalance = currentBalance - creditAmount;
+
+      await users.update(registration.id, {
+        wallete_balance: updatedBalance,
+      });
+
+      const nextId = await getNextNumericId(transactions);
+
+      const transaction = transactions.create({
+        id: nextId,
+        amount: creditAmount,
+        transaction_id: 'Deduction',
+        createdby: registration.username || registration.email,
+        created_date: new Date(),
+        status: 'Success',
+        mode: 'Debit',
+        credits: 0,
+        paymentid: null,
+        orderid: null,
+      });
+
+      const savedTransaction = await transactions.save(transaction);
+
+      return {
+        message: 'Credit Deducted Successfully',
+        wallete_balance: updatedBalance,
+        transaction: savedTransaction,
+        registration,
+      };
+    });
+
+    try {
+      await this.sendCreditDeductedEmail({
         email: result.registration.email,
         firstName: result.registration.firstname,
         credits: creditAmount,

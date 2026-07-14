@@ -509,9 +509,9 @@ export class ReportService {
     // ==============================
 
     if (!isClient) {
-      // Admins always see only Credit transactions
+      // Admins want to see standard credits ('', '0'), manual bonuses ('Bonus'), and manual deductions ('Deduction')
       query.andWhere(
-        "COALESCE(transaction.transaction_id, '') IN ('', '0')",
+        "COALESCE(transaction.transaction_id, '') IN ('', '0', 'Bonus', 'Deduction')",
       );
     } else {
       // Clients can switch between Credit / Debit / Bonus / All
@@ -520,7 +520,7 @@ export class ReportService {
       switch (normalizedType) {
         case 'credit':
           query.andWhere(
-            "COALESCE(transaction.transaction_id, '') IN ('', '0')",
+            "COALESCE(transaction.transaction_id, '') IN ('', '0', 'Bonus')",
           );
           break;
 
