@@ -361,6 +361,7 @@ export class ReportService {
           subject_address: order.subject_address,
           reply: order.reply || '',
           remark: order.remark || '',
+          message: order.message || '',
           emp_remark: order.emp_remark || order.remark || order.description || '',
           remaining_tat: this.calculateRemainingTat(order),
           feedback_rating: order.feedback_rating,
@@ -439,6 +440,7 @@ export class ReportService {
         description: order.description,
         reply: order.reply,
         remark: order.remark,
+        message: order.message,
         sketch: order.sketch,
       },
       downloads: downloads.map((item) => ({
@@ -466,13 +468,15 @@ export class ReportService {
   ) {
     const query = this.transactionRepo.createQueryBuilder('transaction');
 
+    const isClient =
+      (currentUser?.role ?? '').trim().toLowerCase() === 'client';
+
     // Client can only see their own transactions
-    const allowedUsernames =
-      (currentUser?.role ?? '').toLowerCase() === 'client'
-        ? [currentUser?.username, currentUser?.email]
-          .map((value) => `${value ?? ''}`.trim().toLowerCase())
-          .filter(Boolean)
-        : [];
+    const allowedUsernames = isClient
+      ? [currentUser?.username, currentUser?.email]
+        .map((value) => `${value ?? ''}`.trim().toLowerCase())
+        .filter(Boolean)
+      : [];
 
     if (allowedUsernames.length) {
       query.andWhere(
@@ -500,33 +504,49 @@ export class ReportService {
       );
     }
 
-    // Transaction Type filter
-    const normalizedType = filters?.type?.trim().toLowerCase() || 'all';
+    // ==============================
+    // Transaction Type Filter
+    // ==============================
 
-    switch (normalizedType) {
-      case 'credit':
-        query.andWhere(
-          "(COALESCE(transaction.transaction_id, '') = '' OR COALESCE(transaction.transaction_id, '') = '0')",
-        );
-        break;
+    if (!isClient) {
+      // Admins always see only Credit transactions
+      query.andWhere(
+        "COALESCE(transaction.transaction_id, '') IN ('', '0')",
+      );
+    } else {
+      // Clients can switch between Credit / Debit / Bonus / All
+      const normalizedType = filters?.type?.trim().toLowerCase() || 'all';
 
-      case 'bonus':
-        query.andWhere(
-          "LOWER(COALESCE(transaction.transaction_id, '')) = :bonusId",
-          {
-            bonusId: 'bonus',
-          },
-        );
-        break;
+      switch (normalizedType) {
+        case 'credit':
+          query.andWhere(
+            "COALESCE(transaction.transaction_id, '') IN ('', '0')",
+          );
+          break;
 
-      case 'debit':
-        query.andWhere(
-          "LOWER(COALESCE(transaction.mode, '')) = :mode",
-          {
-            mode: 'debit',
-          },
-        );
-        break;
+        case 'bonus':
+          query.andWhere(
+            "LOWER(COALESCE(transaction.transaction_id, '')) = :bonusId",
+            {
+              bonusId: 'bonus',
+            },
+          );
+          break;
+
+        case 'debit':
+          query.andWhere(
+            "LOWER(COALESCE(transaction.mode, '')) = :mode",
+            {
+              mode: 'debit',
+            },
+          );
+          break;
+
+        case 'all':
+        default:
+          // No additional filter
+          break;
+      }
     }
 
     const transactions = await query
