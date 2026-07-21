@@ -953,33 +953,35 @@ export class OrderService {
     body: { feedback?: string; feedback_rating?: number | string },
   ) {
     const order = await this.ensureOrderAccess(id, user);
+
     const feedback = `${body.feedback ?? ''}`.trim();
     const feedbackRating = this.toNullableNumber(body.feedback_rating);
 
-    if (!feedback) {
-      throw new BadRequestException('Feedback is required');
+    // Require either feedback text or rating
+    if (!feedback && feedbackRating == null) {
+      throw new BadRequestException('Please provide feedback or a rating.');
     }
 
     if ((order.status ?? '').trim().toLowerCase() !== 'completed') {
       throw new BadRequestException(
-        "The feedback can't submitted as this is not completed order",
+        "The feedback can't be submitted because this order is not completed.",
       );
     }
 
     await this.orderRepo.update(order.id, {
-      feedback,
-      feedback_rating: feedbackRating ?? order.feedback_rating,
+      feedback: feedback || null,
+      feedback_rating: feedbackRating,
       modify_date: new Date(),
       modifyby: user.username || user.email || `${user.id}`,
     });
 
     const updatedOrder = await this.findOne(id);
     const propAdd = updatedOrder.subject_address || '';
+
     const supportEmail =
       process.env.SMTP_ORDER_NOTIFY_TO ||
       process.env.SMTP_FROM ||
-      process.env.SMTP_USER ||
-      'orders@backbonedatasolutions.com';
+      process.env.SMTP_USER;
 
     const smtpConfigured = Boolean(
       process.env.SMTP_HOST &&
@@ -987,23 +989,65 @@ export class OrderService {
         process.env.SMTP_PASSWORD,
     );
 
-    if (smtpConfigured) {
-      await emailTransporter.sendMail({
-        from: process.env.SMTP_FROM || process.env.SMTP_USER,
-        to: supportEmail,
-        subject: `Feedback for file #${updatedOrder.id} - ${propAdd}`,
-        html: `<div><p>Hello Team,<br /><br />File #-${updatedOrder.id}<br /><br />Feedback-${feedback}<br /><br />Message from-${user.username || user.email || updatedOrder.createdby}<br /><br /></p><p>Thank you,<br /><br /><b>Backbone Data Solutions Team</b><br /><b>+1 (760) 376-5994</b></p></div>`,
-      });
+    // Notify support
+    if (smtpConfigured && supportEmail) {
+      try {
+        await emailTransporter.sendMail({
+          from: process.env.SMTP_FROM || process.env.SMTP_USER,
+          to: supportEmail,
+          subject: `Feedback for file #${updatedOrder.id} - ${propAdd}`,
+          html: `
+          <div>
+            <p>
+              Hello Team,<br /><br />
+              File #: ${updatedOrder.id}<br /><br />
+              Rating: ${feedbackRating ?? 'N/A'}<br />
+              Feedback: ${feedback || 'N/A'}<br /><br />
+              Message from: ${
+                user.username || user.email || updatedOrder.createdby
+              }
+            </p>
+
+            <p>
+              Thank you,<br /><br />
+              <b>Backbone Data Solutions Team</b><br />
+              <b>+1 (760) 376-5994</b>
+            </p>
+          </div>
+        `,
+        });
+      } catch (err) {
+        console.error('Failed to send support email:', err);
+      }
     }
 
-    await this.sendOrderEmail({
-      order: updatedOrder,
-      subject: `Feedback for file #${updatedOrder.id} - ${propAdd}`,
-      html: `<div><p>Hello,<br /><br />Thank you for sharing valuable feedback. Our management will review and get back to you as soon as possible.<br /><br /></p><p>Thank you,<br /><br /><b>Backbone Data Solutions Team</b><br /><b>+1 (760) 376-5994</b></p></div>`,
-    });
+    // Notify customer (only if recipient exists)
+    try {
+      await this.sendOrderEmail({
+        order: updatedOrder,
+        subject: `Feedback for file #${updatedOrder.id} - ${propAdd}`,
+        html: `
+        <div>
+          <p>
+            Hello,<br /><br />
+            Thank you for sharing your valuable feedback. Our management
+            will review it and get back to you if necessary.
+          </p>
+
+          <p>
+            Thank you,<br /><br />
+            <b>Backbone Data Solutions Team</b><br />
+            <b>+1 (760) 376-5994</b>
+          </p>
+        </div>
+      `,
+      });
+    } catch (err) {
+      console.error('Failed to send customer email:', err);
+    }
 
     return {
-      message: 'Thanx for providing your valuable feedback',
+      message: 'Thanks for providing your valuable feedback.',
       order: updatedOrder,
     };
   }
