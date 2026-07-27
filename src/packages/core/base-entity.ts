@@ -1,14 +1,14 @@
 import { Column } from 'typeorm';
 
 export class UserBaseEntity {
-  @Column({ type: 'uuid' })
-  created_by?: string;
+  @Column({ type: 'int', nullable: true })
+  created_by?: number;
 
-  @Column({ type: 'bigint' })
+  @Column({ type: 'bigint', nullable: true })
   created_on?: number;
 
-  @Column({ type: 'uuid' })
-  modified_by?: string;
+  @Column({ type: 'int', nullable: true })
+  modified_by?: number;
 
   @Column({ type: 'bigint' })
   modified_on?: number;

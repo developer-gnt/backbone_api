@@ -24,6 +24,8 @@ import { AlertAvailabilityModule } from './masters/alert-availability/alert-avai
 import { OrderModule } from './masters/order/order.module';
 import { ReportModule } from './masters/report/report.module';
 import { TatPricingModule } from './masters/tat-pricing/tat-pricing.module';
+import { Inspection26Module } from './masters/inspection26/inspection26.module';
+import { Inspection36Module } from './masters/inspection36/inspection36.module';
 import { APP_GUARD } from '@nestjs/core';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 import { RolesGuard } from './packages/authorization/roles.guard';
@@ -66,6 +68,8 @@ import { MulterModule } from '@nestjs/platform-express';
     TatPricingModule,
     OrderModule,
     ReportModule,
+    Inspection26Module,
+    Inspection36Module,
   ],
   controllers: [AppController, PdfController, ExcelController],
   providers: [

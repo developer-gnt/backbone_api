@@ -1,0 +1,1013 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="ieINSPECT">
+<meta name="theme-color" content="#14304D">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-180.png">
+<title>ieIMPACT UAD 2.6 Field Inspection</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--navy:#0B1D3A;--orange:#E07B20;--green:#1D7A4E;--gray:#4A5568;--light:#F7F8FA;--border:#E2E8F0;--white:#FFFFFF;--red:#C0392B}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;background:var(--light);color:#1A2332;line-height:1.5;-webkit-font-smoothing:antialiased}
+
+/* Header */
+.hdr{background:var(--navy);color:#fff;padding:12px 16px;position:sticky;top:0;z-index:100;display:flex;align-items:center;justify-content:space-between}
+.hdr h1{font-size:16px;font-weight:700}.hdr h1 span{font-weight:400;font-size:12px;opacity:.7}
+.hdr-btns{display:flex;gap:8px}
+.hdr-btn{background:rgba(255,255,255,.15);border:none;color:#fff;padding:6px 12px;border-radius:6px;font-size:12px;cursor:pointer;font-weight:600}
+.hdr-btn:hover{background:rgba(255,255,255,.25)}
+.hdr-btn.orange{background:var(--orange)}
+
+/* Progress bar */
+.progress{background:var(--border);height:4px;position:sticky;top:52px;z-index:99}
+.progress-fill{height:100%;background:var(--orange);transition:width .3s ease;border-radius:0 2px 2px 0}
+
+/* Step navigation pills */
+.step-nav{display:flex;gap:6px;padding:10px 16px;overflow-x:auto;background:var(--white);border-bottom:1px solid var(--border);position:sticky;top:56px;z-index:98;-webkit-overflow-scrolling:touch}
+.step-pill{flex-shrink:0;padding:6px 12px;border-radius:20px;font-size:12px;font-weight:600;border:1.5px solid var(--border);background:var(--white);color:var(--gray);cursor:pointer;transition:all .2s}
+.step-pill.active{background:var(--navy);color:#fff;border-color:var(--navy)}
+.step-pill.done{background:var(--green);color:#fff;border-color:var(--green)}
+.step-pill .num{font-weight:800;margin-right:3px}
+
+/* Container */
+.container{max-width:700px;margin:0 auto;padding:0 12px 100px}
+
+/* Step sections */
+.step-section{display:none;padding:16px 0}
+.step-section.active{display:block}
+.step-title{font-size:20px;font-weight:800;color:var(--navy);margin-bottom:4px}
+.step-where{font-size:13px;color:var(--gray);margin-bottom:16px;font-style:italic}
+
+/* Subsection */
+.subsec{font-size:15px;font-weight:700;color:var(--navy);margin:20px 0 8px;padding-bottom:4px;border-bottom:2px solid var(--navy)}
+.subsec.star::before{content:"★ ";color:var(--orange)}
+.tip{font-size:12px;color:var(--gray);font-style:italic;margin:-4px 0 10px;padding-left:2px}
+
+/* Field groups */
+.field{margin-bottom:14px}
+.field-label{font-size:13px;font-weight:700;color:#1A2332;margin-bottom:6px;display:flex;align-items:center;gap:4px}
+.field-label .star{color:var(--orange);font-size:14px}
+.field-label .new-badge{background:var(--orange);color:#fff;font-size:9px;padding:1px 5px;border-radius:8px;font-weight:700}
+
+/* Radio options */
+.options{display:flex;flex-wrap:wrap;gap:6px}
+.opt{display:flex;align-items:center;gap:6px;padding:8px 14px;border:1.5px solid var(--border);border-radius:24px;cursor:pointer;font-size:13px;transition:all .15s;background:var(--white);user-select:none;-webkit-tap-highlight-color:transparent}
+.opt:hover{border-color:var(--navy);background:#F0F4F8}
+.opt.selected{border-color:var(--navy);background:var(--navy);color:#fff}
+.opt input{display:none}
+
+/* Yes/No */
+.yn-group{display:flex;gap:8px}
+.yn-btn{padding:8px 20px;border:1.5px solid var(--border);border-radius:24px;font-size:14px;font-weight:700;cursor:pointer;background:var(--white);transition:all .15s;user-select:none;-webkit-tap-highlight-color:transparent}
+.yn-btn:hover{border-color:var(--navy)}
+.yn-btn.yes.selected{background:var(--green);color:#fff;border-color:var(--green)}
+.yn-btn.no.selected{background:var(--red);color:#fff;border-color:var(--red)}
+
+/* Text inputs */
+.txt{width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;font-family:inherit;transition:border-color .2s;background:var(--white)}
+.txt:focus{outline:none;border-color:var(--navy);box-shadow:0 0 0 3px rgba(11,29,58,.1)}
+.txt-row{display:grid;gap:8px}
+.txt-row.c2{grid-template-columns:1fr 1fr}
+.txt-row.c3{grid-template-columns:1fr 1fr 1fr}
+.txt-row.c4{grid-template-columns:1fr 1fr 1fr 1fr}
+.txt-mini{display:flex;flex-direction:column;gap:3px}
+.txt-mini label{font-size:11px;font-weight:600;color:var(--gray)}
+
+/* Checkboxes (photos, pre-departure) */
+.chk-group{display:flex;flex-wrap:wrap;gap:6px}
+.chk{display:flex;align-items:center;gap:6px;padding:7px 12px;border:1.5px solid var(--border);border-radius:8px;cursor:pointer;font-size:12px;background:var(--white);transition:all .15s;user-select:none;-webkit-tap-highlight-color:transparent}
+.chk:hover{border-color:var(--green)}
+.chk.checked{border-color:var(--green);background:#E8F5E9;color:var(--green);font-weight:600}
+.chk input{display:none}
+.chk-icon{width:16px;height:16px;border:1.5px solid var(--border);border-radius:3px;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s}
+.chk.checked .chk-icon{background:var(--green);border-color:var(--green);color:#fff}
+
+/* Photo section */
+.photo-label{font-size:12px;font-weight:700;color:var(--green);margin-bottom:6px;display:flex;align-items:center;gap:4px}
+.photo-label::before{content:"📷"}
+
+/* Defect block */
+.defect-block{background:#FFF8F0;border:1px solid #FFDDB5;border-radius:8px;padding:12px;margin:8px 0}
+.defect-block .field-label{font-size:12px}
+
+/* Textarea */
+textarea.txt{min-height:80px;resize:vertical}
+
+/* Bottom nav */
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;background:var(--white);border-top:1px solid var(--border);padding:10px 16px;display:flex;justify-content:space-between;align-items:center;z-index:100;gap:10px}
+.nav-btn{padding:12px 24px;border-radius:8px;font-size:14px;font-weight:700;border:none;cursor:pointer;transition:all .15s}
+.nav-prev{background:var(--light);color:var(--navy);border:1.5px solid var(--border)}
+.nav-next{background:var(--navy);color:#fff;flex:1;max-width:200px;text-align:center}
+.nav-next:hover{background:#162D4F}
+.nav-prev:hover{background:#E8EDF2}
+.step-count{font-size:12px;color:var(--gray);font-weight:600}
+
+/* Save indicator */
+.save-toast{position:fixed;bottom:70px;left:50%;transform:translateX(-50%);background:#1A2332;color:#fff;padding:6px 16px;border-radius:20px;font-size:12px;opacity:0;transition:opacity .3s;z-index:200;pointer-events:none}
+.save-toast.show{opacity:1}
+
+/* Beta notice */
+.beta-notice{background:#FFFBF0;border-left:4px solid var(--orange);padding:12px 16px;margin:16px 0;border-radius:0 8px 8px 0;font-size:13px;color:var(--gray);line-height:1.5}
+.beta-notice strong{color:var(--navy)}
+
+/* Export modal */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:300;display:none;align-items:center;justify-content:center;padding:16px}
+.modal-overlay.show{display:flex}
+.modal{background:var(--white);border-radius:12px;padding:24px;max-width:400px;width:100%}
+.modal h2{font-size:18px;color:var(--navy);margin-bottom:12px}
+.modal p{font-size:13px;color:var(--gray);margin-bottom:16px}
+.modal-btns{display:flex;flex-direction:column;gap:8px}
+.modal-btn{padding:12px;border-radius:8px;font-size:14px;font-weight:700;border:none;cursor:pointer;text-align:center;text-decoration:none;display:block}
+.modal-btn.primary{background:var(--navy);color:#fff}
+.modal-btn.secondary{background:var(--light);color:var(--navy);border:1px solid var(--border)}
+.modal-close{margin-top:12px;text-align:center}
+.modal-close a{font-size:13px;color:var(--gray);cursor:pointer}
+
+/* Print styles */
+@media print{
+  .hdr,.progress,.step-nav,.bottom-nav,.save-toast,.hdr-btns,.modal-overlay,.beta-notice,.nav-btn{display:none!important}
+  .step-section{display:block!important;page-break-inside:avoid}
+  .container{max-width:100%;padding:0}
+  body{font-size:11px}
+  .opt.selected{border:2px solid #000;font-weight:700}
+  .yn-btn.selected{border:2px solid #000;font-weight:700}
+  .chk.checked{border:2px solid #000}
+}
+
+/* Responsive */
+@media(max-width:480px){
+  .txt-row.c3,.txt-row.c4{grid-template-columns:1fr 1fr}
+  .step-title{font-size:18px}
+  .opt{padding:7px 10px;font-size:12px}
+}
+/* Install banner */
+.install-banner{position:fixed;bottom:0;left:0;right:0;background:#14304D;color:#fff;padding:16px 20px;z-index:400;display:none;align-items:center;gap:12px;box-shadow:0 -4px 20px rgba(0,0,0,.3);border-radius:16px 16px 0 0;animation:slideUp .4s ease}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.install-banner.show{display:flex}
+.install-icon{width:44px;height:44px;border-radius:10px;background:#E07B20;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:16px;flex-shrink:0}
+.install-text{flex:1}
+.install-text strong{display:block;font-size:14px;margin-bottom:2px}
+.install-text span{font-size:12px;opacity:.85;line-height:1.3}
+.install-btn{background:#E07B20;color:#fff;border:none;padding:10px 18px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;flex-shrink:0}
+.install-close{background:none;border:none;color:rgba(255,255,255,.6);font-size:20px;cursor:pointer;padding:4px 8px;flex-shrink:0}
+.ios-share-icon{display:inline-block;width:18px;height:18px;vertical-align:middle;margin:0 2px}
+/* Install guide modal */
+.install-guide-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:500;display:none;align-items:flex-end;justify-content:center;padding:0}
+.install-guide-overlay.show{display:flex}
+.install-guide{background:#fff;border-radius:20px 20px 0 0;padding:28px 24px 40px;max-width:480px;width:100%;animation:slideUp .3s ease}
+.install-guide h3{font-size:18px;font-weight:800;color:#0B1D3A;margin-bottom:6px}
+.install-guide p{font-size:13px;color:#4A5568;margin-bottom:20px;line-height:1.5}
+.install-guide-steps{display:flex;flex-direction:column;gap:14px;margin-bottom:24px}
+.install-guide-step{display:flex;align-items:flex-start;gap:12px}
+.install-guide-step-num{width:28px;height:28px;border-radius:50%;background:#0B1D3A;color:#fff;font-size:13px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+.install-guide-step-text{font-size:14px;color:#1A2332;line-height:1.4}
+.install-guide-step-text strong{display:block;font-weight:700}
+.install-guide-step-text span{font-size:12px;color:#718096}
+.install-guide-close{width:100%;padding:14px;border-radius:10px;background:#E07B20;color:#fff;border:none;font-size:15px;font-weight:700;cursor:pointer}
+/* Header install button */
+.hdr-install-btn{background:rgba(224,123,32,.9);border:none;color:#fff;padding:6px 12px;border-radius:6px;font-size:12px;cursor:pointer;font-weight:700;display:none}
+.hdr-install-btn.visible{display:block}
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="hdr">
+  <h1>ieIMPACT <span>UAD 2.6 Inspection</span></h1>
+  <div class="hdr-btns">
+    <button class="hdr-install-btn" id="hdrInstallBtn" onclick="showInstallGuide()">📲 Install</button>
+    <button class="hdr-btn" style="background:#1D7A4E" id="submitApiBtn" onclick="submitToBackend()">Submit to API</button>
+    <button class="hdr-btn" onclick="showTemplateMenu()">Templates</button>
+    <button class="hdr-btn" onclick="clearForm()">Clear</button>
+    <button class="hdr-btn orange" onclick="showExport()">Export</button>
+  </div>
+</div>
+
+<!-- Progress -->
+<div class="progress"><div class="progress-fill" id="progressFill"></div></div>
+
+<!-- Step pills -->
+<div class="step-nav" id="stepNav"></div>
+
+<!-- Main content -->
+<div class="container" id="app"></div>
+
+<!-- Bottom nav -->
+<div class="bottom-nav">
+  <button class="nav-btn nav-prev" id="prevBtn" onclick="prevStep()">← Back</button>
+  <span class="step-count" id="stepCount"></span>
+  <button class="nav-btn nav-next" id="nextBtn" onclick="nextStep()">Next →</button>
+</div>
+
+<!-- Save toast -->
+<div class="save-toast" id="saveToast">✓ Saved</div>
+
+<!-- Export modal -->
+<div class="modal-overlay" id="exportModal">
+  <div class="modal">
+    <h2>Export Inspection</h2>
+    <p>Your data is saved locally on this device. Choose how to export:</p>
+    <div class="modal-btns">
+      <button class="modal-btn primary" onclick="exportPrint()">🖨️ Print / Save as PDF</button>
+      <a class="modal-btn secondary" id="emailBtn" href="#">📧 Email to BackBone Data Solution</a>
+      <a class="modal-btn secondary" href="/downloads/ieIMPACT_UAD26_InspectionSheet.pdf" target="_blank" rel="noopener noreferrer">📄 Download Blank PDF</a>
+      <button class="modal-btn secondary" onclick="exportJSON()">💾 Download Data (JSON)</button>
+    </div>
+    <div class="modal-close"><a onclick="hideExport()">Cancel</a></div>
+  </div>
+</div>
+
+<!-- Template modal -->
+<div class="modal-overlay" id="templateModal">
+  <div class="modal">
+    <h2>Templates</h2>
+    <p>Save your common selections as a template. Load it on your next inspection to pre-fill fields.</p>
+    <p style="font-size:11px;color:#A0AEC0;margin-top:4px;text-align:center">Templates are saved on this device only.</p>
+    <div class="modal-btns">
+      <button class="modal-btn primary" onclick="saveTemplate()">💾 Save Current as Template</button>
+      <button class="modal-btn secondary" onclick="loadTemplate()" id="loadTemplateBtn">📂 Load Template</button>
+      <button class="modal-btn secondary" onclick="deleteTemplate()" id="deleteTemplateBtn" style="color:#C0392B">🗑️ Delete Saved Template</button>
+    </div>
+    <p id="templateStatus" style="font-size:12px;color:#718096;margin-top:8px;text-align:center"></p>
+    <div class="modal-close"><a onclick="hideTemplateMenu()">Cancel</a></div>
+  </div>
+</div>
+
+<!-- Install guide modal -->
+<div class="install-guide-overlay" id="installGuideOverlay" onclick="hideInstallGuide(event)">
+  <div class="install-guide" id="installGuideBox">
+    <h3 id="installGuideTitle">Install ieINSPECT</h3>
+    <p id="installGuideSubtitle">Works offline — use it at the property with no signal</p>
+    <div class="install-guide-steps" id="installGuideSteps"></div>
+    <button class="install-guide-close" id="installGuideActionBtn">Install Now</button>
+  </div>
+</div>
+
+<!-- Terms footer -->
+<div style="text-align:center;padding:16px 16px 120px;font-size:11px;color:#A0AEC0;line-height:1.6;">
+  By using this form you agree to the <a href="/terms-inspection-sheet" style="color:#718096;text-decoration:underline;">terms of use</a>.
+</div>
+
+<!-- Install banner -->
+<div class="install-banner" id="installBanner">
+  <div class="install-icon">ie</div>
+  <div class="install-text">
+    <strong>Install ieINSPECT</strong>
+    <span id="installMsg">Add to your home screen for offline use — works like a native app</span>
+  </div>
+  <button class="install-btn" id="installBtn" onclick="doInstall()">Install</button>
+  <button class="install-close" onclick="dismissInstall()">&times;</button>
+</div>
+
+<script>
+// ═══════════════════════════════════════
+// FORM DATA DEFINITION
+// ═══════════════════════════════════════
+
+const STEPS = [
+  // STEP 0: PROPERTY INFO
+  {
+    id:"id",num:"",title:"Property Info",where:"",
+    fields:[
+      {type:"text-row",cols:2,fields:[{id:"address",label:"Address"},{id:"city",label:"City"}]},
+      {type:"text-row",cols:3,fields:[{id:"stzip",label:"State/ZIP"},{id:"date",label:"Inspection Date",inputType:"date"},{id:"fileno",label:"File #"}]},
+      {type:"text-row",cols:2,fields:[{id:"appraiser",label:"Appraiser"},{id:"borrower",label:"Borrower"}]},
+      {type:"text-row",cols:2,fields:[{id:"timein",label:"Time In",inputType:"time"},{id:"timeout",label:"Time Out",inputType:"time"}]},
+      {type:"radio",id:"reporttype",label:"Report Type",options:["URAR","Condo","Multifamily","Manufactured","Exterior Only"]},
+      {type:"radio",id:"occupant",label:"Occupant",options:["Owner","Tenant","Vacant"]},
+      {type:"radio",id:"dwelling_style",label:"Design / Style",options:["Ranch","Colonial","Split Level","Split Foyer","Cape Cod","Contemporary","Bi-Level","Tri-Level","Townhouse","Condo","Other"]},
+      {type:"radio",id:"structure",label:"Structure",options:["Detached","Attached","Semi-Detached"]},
+      {type:"text-row",cols:3,fields:[{id:"units",label:"Units"},{id:"stories",label:"Stories"},{id:"yearbuilt",label:"Year Built"}]},
+      {type:"text-row",cols:3,fields:[{id:"age",label:"Age"},{id:"effage",label:"Effective Age"},{id:"rel",label:"Rem Econ Life"}]},
+      {type:"yn",id:"pud",label:"PUD?"},
+      {type:"text-row",cols:3,fields:[{id:"hoa",label:"HOA $"},{id:"hoafreq",label:"HOA Frequency"},{id:"condoproj",label:"Condo Project"}]},
+      {type:"beta"},
+    ]
+  },
+  // STEP 1: SITE & LOT
+  {
+    id:"s1",num:"1",title:"Site & Lot",where:"drive up + walk grounds",
+    fields:[
+      {type:"sub",label:"Street & Access"},
+      {type:"radio",id:"streetsurface",label:"Street Surface",options:["Asphalt","Concrete","Gravel","Chip Seal","Other"]},
+      {type:"radio",id:"streetpub",label:"Street",options:["Public","Private"]},
+      {type:"radio",id:"streetlights",label:"Street Lights",options:["Wood Pole","Aluminum Pole","Electric","None"]},
+      {type:"yn",id:"alley",label:"Alley?"},
+      {type:"radio",id:"driveway",label:"Driveway Surface",options:["Concrete","Asphalt","Gravel","Dirt","Other"]},
+      {type:"sub",label:"Utilities"},
+      {type:"radio",id:"electric",label:"Electric",options:["Yes","No"]},
+      {type:"radio",id:"gas",label:"Gas",options:["Natural","Propane","None"]},
+      {type:"radio",id:"water",label:"Water",options:["Public","Private Well","Rural Well","Other"]},
+      {type:"radio",id:"sewer",label:"Sewer",options:["Public","Septic","Other"]},
+      {type:"sub",label:"Lot"},
+      {type:"radio",id:"lotsize",label:"Lot Size",options:["Typical","Smaller","Larger"]},
+      {type:"radio",id:"lotshape",label:"Lot Shape",options:["Rectangular","Irregular","Corner","Flag","Other"]},
+      {type:"radio",id:"drainage",label:"Drainage",options:["Adequate","Insufficient"]},
+      {type:"sub",label:"Location"},
+      {type:"radio",id:"locimpact",label:"Location Impact",options:["Neutral","Beneficial","Adverse"]},
+      {type:"radio",id:"loctype",label:"Location (circle all)",multi:true,options:["Residential","Busy Street","Interior","Cul-de-sac","Corner","Golf Course","Park","Lake","Dead End","Other"]},
+      {type:"sub",label:"View"},
+      {type:"radio",id:"viewimpact",label:"View Impact",options:["Neutral","Beneficial","Adverse"]},
+      {type:"radio",id:"viewtype",label:"View (circle all)",multi:true,options:["Residential","Busy Street","Treed","Golf Course","Park","Woods","School","Lake","Commercial","Power Lines","Other"]},
+      {type:"text",id:"viewnotes",label:"View notes"},
+      {type:"yn",id:"sitedefects",label:"Any site defects?"},
+      {type:"text",id:"sitedefect_desc",label:"Defect description"},
+      {type:"photos",id:"p1",items:["Street Scene","Front of Property"]},
+    ]
+  },
+  // STEP 2: EXTERIOR
+  {
+    id:"s2",num:"2",title:"Exterior",where:"walk all four sides",
+    fields:[
+      {type:"sub",label:"Materials"},
+      {type:"radio",id:"extfront",label:"Ext Walls (front)",options:["Wood","Vinyl","Brick","Stucco","Stone","Cement Board","Composite","Other"]},
+      {type:"radio",id:"extside",label:"Ext Walls (sides)",options:["Same as Front","Wood","Vinyl","Brick","Stucco","Stone","Cement Board","Other"]},
+      {type:"radio",id:"roof",label:"Roof Material",options:["Asphalt Shingles","Wood Shake","Metal","Tile","Tar/Gravel","Comp","Other"]},
+      {type:"radio",id:"gutters",label:"Gutters",options:["Aluminum","Vinyl","Galvanized","Copper","None"]},
+      {type:"radio",id:"windows",label:"Windows",options:["Aluminum","Vinyl","Wood","Other"]},
+      {type:"yn",id:"stormwindows",label:"Storm windows?"},
+      {type:"yn",id:"screens",label:"Window screens?"},
+      {type:"radio",id:"fence",label:"Fence",options:["Metal","Wood","Wrought Iron","Chain Link","None","Other"]},
+      {type:"sub",label:"Outdoor Features"},
+      {type:"radio",id:"patio",label:"Patio Material",options:["Concrete","Brick","Stone","Pavers","None","Other"]},
+      {type:"radio",id:"decksize",label:"Deck",options:["Large","Average","Small","None"]},
+      {type:"radio",id:"deckmat",label:"Deck Material",options:["Wood","Trex/Composite","Vinyl","None","Other"]},
+      {type:"yn",id:"coverporch",label:"Covered porch?"},
+      {type:"radio",id:"porchloc",label:"  Porch Location",options:["Front","Rear","Side","Wrap"]},
+      {type:"yn",id:"screenporch",label:"Screened porch?"},
+      {type:"yn",id:"sunroom",label:"Sunroom?"},
+      {type:"yn",id:"gazebo",label:"Gazebo?"},
+      {type:"yn",id:"balcony",label:"Balcony?"},
+      {type:"yn",id:"sprinklers",label:"Sprinkler system?"},
+      {type:"radio",id:"pool",label:"Pool",options:["None","In-Ground","Above-Ground","Hot Tub"]},
+      {type:"sub",label:"Outbuildings + Garage"},
+      {type:"yn",id:"shed",label:"Shed / outbuilding?"},
+      {type:"text",id:"sheddesc",label:"  Size / description"},
+      {type:"text-row",cols:2,fields:[{id:"garagecars",label:"Garage # cars"},{id:"garagesize",label:"Garage size"}]},
+      {type:"radio",id:"garagetype",label:"Garage Type",options:["Attached","Detached","Built-In","Carport","None"]},
+      {type:"radio",id:"garageloc",label:"Garage Location",options:["Front","Side","Rear","Alley"]},
+      {type:"radio",id:"parking",label:"Other Parking",options:["Driveway","Open Lot","Assigned","None"]},
+      {type:"sub",label:"Exterior Quality"},
+      {type:"radio",id:"extquality",label:"Quality of Construction",options:["Q1","Q2","Q3","Q4","Q5","Q6"]},
+      {type:"radio",id:"extcond",label:"Condition",options:["C1","C2","C3","C4","C5","C6"]},
+      {type:"yn",id:"extdefects",label:"Any exterior defects?"},
+      {type:"text",id:"extdefect_desc",label:"Defect description"},
+      {type:"photos",id:"p2",items:["Front","Rear","Left Side","Right Side","Garage","Defects"]},
+    ]
+  },
+  // STEP 3: INTERIOR
+  {
+    id:"s3",num:"3",title:"Interior",where:"walk every room",
+    fields:[
+      {type:"sub",label:"Room Count"},
+      {type:"text-row",cols:3,fields:[{id:"totalrooms",label:"Total Rooms"},{id:"bedrooms",label:"Bedrooms"},{id:"fullbaths",label:"Full Baths"}]},
+      {type:"text-row",cols:2,fields:[{id:"halfbaths",label:"Half Baths"},{id:"laundry",label:"Laundry Location"}]},
+      {type:"sub",label:"Finishes"},
+      {type:"radio",id:"flooring",label:"Flooring (circle all)",multi:true,options:["Hardwood","Laminate","Carpet","Vinyl","Tile","LVP","Engineered Wood","Other"]},
+      {type:"radio",id:"walls",label:"Walls",options:["Drywall","Plaster","Paneling","Other"]},
+      {type:"radio",id:"trim",label:"Trim",options:["Wood","MDF","Other"]},
+      {type:"radio",id:"doors",label:"Doors",options:["Wood","Paneled","Hollow Core","Other"]},
+      {type:"sub",label:"Bath Detail"},
+      {type:"radio",id:"bathfloor",label:"Bath Floor",options:["Vinyl","Tile","Carpet","Hardwood","LVP","Other"]},
+      {type:"radio",id:"bathwainscot",label:"Bath Wainscot",options:["Tile","Fiberglass","Cultured Marble","Other"]},
+      {type:"text",id:"bathnotes",label:"Bath notes (updates, condition)"},
+      {type:"sub",label:"Kitchen"},
+      {type:"radio",id:"appliances",label:"Appliances (circle all)",multi:true,options:["Range/Oven","Disposal","Dishwasher","Fan/Hood","Microwave","Washer/Dryer","Refrigerator"]},
+      {type:"radio",id:"counters",label:"Countertops",options:["Laminate","Tile","Granite","Quartz","Corian","Butcher Block","Other"]},
+      {type:"radio",id:"backsplash",label:"Backsplash",options:["Tile","Laminate","Stone","None","Other"]},
+      {type:"text",id:"kitchennotes",label:"Kitchen update notes"},
+      {type:"sub",label:"Other Features"},
+      {type:"yn",id:"fireplace",label:"Fireplace?"},
+      {type:"text-row",cols:2,fields:[{id:"fpcount",label:"# Fireplaces"},{id:"fptype",label:"Type"}]},
+      {type:"yn",id:"woodstove",label:"Wood stove?"},
+      {type:"yn",id:"alarm",label:"Alarm / security?"},
+      {type:"yn",id:"intercom",label:"Intercom?"},
+      {type:"yn",id:"centralvac",label:"Central vacuum?"},
+      {type:"sub",label:"Heating + Cooling"},
+      {type:"radio",id:"heating",label:"Heating",options:["Forced Warm Air","Heat Pump","Radiant","Baseboard","Wall","Other"]},
+      {type:"radio",id:"fuel",label:"Fuel",options:["Gas","Electric","Oil","Propane","Wood","Solar","Other"]},
+      {type:"radio",id:"cooling",label:"Cooling",options:["Central AC","Window AC","Mini Split","None"]},
+      {type:"sub",label:"Attic"},
+      {type:"yn",id:"attic",label:"Attic?"},
+      {type:"radio",id:"atticfeat",label:"Attic Features (circle all)",multi:true,options:["Fan","Scuttle","Floor","Drop Stairs","Finished","Insulated"]},
+      {type:"sub",label:"Interior Quality"},
+      {type:"radio",id:"intquality",label:"Interior Quality",options:["Q1","Q2","Q3","Q4","Q5","Q6"]},
+      {type:"radio",id:"intcond",label:"Interior Condition",options:["C1","C2","C3","C4","C5","C6"]},
+      {type:"yn",id:"intdefects",label:"Any interior defects?"},
+      {type:"text",id:"intdefect_desc",label:"Defect description"},
+      {type:"photos",id:"p3",items:["Kitchen","All Baths","All Bedrooms","Living Room","Dining","Updates/Defects"]},
+    ]
+  },
+  // STEP 4: BASEMENT
+  {
+    id:"s4",num:"4",title:"Basement / Below Grade",where:"go downstairs",
+    fields:[
+      {type:"tip",text:"Skip this step if the property is slab-on-grade."},
+      {type:"radio",id:"basetype",label:"Type",options:["Full Basement","Partial Basement","Crawl Space","Slab","Other"]},
+      {type:"radio",id:"baseentrance",label:"Outside Entrance",options:["Walkout","Daylight","Bilco Door","None"]},
+      {type:"radio",id:"foundation",label:"Foundation Material",options:["Concrete","Block","Stone","Brick","Other"]},
+      {type:"yn",id:"sumppump",label:"Sump pump?"},
+      {type:"yn",id:"basefinished",label:"Basement finished?"},
+      {type:"text-row",cols:3,fields:[{id:"basepct",label:"% Finished"},{id:"basefinsf",label:"Finished SF"},{id:"baseunfinsf",label:"Unfinished SF"}]},
+      {type:"text",id:"baseceilht",label:"Ceiling height"},
+      {type:"text",id:"baserooms",label:"Basement rooms / description"},
+      {type:"text",id:"basecond",label:"Basement condition notes"},
+      {type:"yn",id:"basedefects",label:"Any basement defects?"},
+      {type:"text",id:"basedefect_desc",label:"Defect description"},
+      {type:"photos",id:"p4",items:["Basement Finished","Basement Unfinished","Mechanicals","Defects"]},
+    ]
+  },
+  // STEP 5: MEASUREMENTS + WRAP-UP
+  {
+    id:"s5",num:"5",title:"Measurements + Wrap-up",where:"verify your sketch",
+    fields:[
+      {type:"sub",label:"Area"},
+      {type:"text-row",cols:3,fields:[{id:"gla",label:"GLA Above Grade SF"},{id:"bgfinsf",label:"Below Grade Fin SF"},{id:"totalrooms2",label:"Total Rooms"}]},
+      {type:"textarea",id:"sketchnotes",label:"Sketch dimensions / measurement notes"},
+      {type:"textarea",id:"comments",label:"General comments"},
+      {type:"sub",label:"Before you leave — check each item"},
+      {type:"checklist",id:"departure",items:[
+        "All rooms counted (total, BR, BA)",
+        "Kitchen appliances noted",
+        "Heating + cooling type + fuel",
+        "Foundation type noted",
+        "Exterior wall material (front + sides)",
+        "Roof material + condition",
+        "Quality rating (Q1-Q6)",
+        "Condition rating (C1-C6)",
+        "Garage type + # cars",
+        "All defects documented",
+        "Flooring types noted",
+        "Bath floor + wainscot",
+        "Attic access + features",
+        "Basement type + % finished",
+        "Sump pump noted",
+        "Pool / deck / patio / porch",
+        "Fence type",
+        "Lot size + shape + drainage",
+        "All levels measured + SF matches sketch",
+        "All required photos taken"
+      ]},
+      {type:"textarea",id:"team_notes",label:"Notes for ieIMPACT desktop team"},
+    ]
+  },
+];
+
+// ═══════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════
+let currentStep = 0;
+let formData = {};
+
+// ═══════════════════════════════════════
+// RENDER
+// ═══════════════════════════════════════
+function renderStepNav() {
+  const nav = document.getElementById('stepNav');
+  nav.innerHTML = STEPS.map((s, i) => {
+    const num = s.num || '•';
+    const cls = i === currentStep ? 'active' : (isStepDone(i) ? 'done' : '');
+    return `<div class="step-pill ${cls}" onclick="goToStep(${i})"><span class="num">${num}</span>${s.title.split(' ')[0]}</div>`;
+  }).join('');
+}
+
+function renderStep() {
+  const step = STEPS[currentStep];
+  const app = document.getElementById('app');
+  let html = `<div class="step-section active">`;
+  html += `<div class="step-title">${step.num ? 'Step ' + step.num + ': ' : ''}${step.title}</div>`;
+  if (step.where) html += `<div class="step-where">${step.where}</div>`;
+
+  for (const f of step.fields) {
+    html += renderField(f);
+  }
+  html += `</div>`;
+  app.innerHTML = html;
+
+  // Restore values
+  restoreValues();
+  updateProgress();
+  renderStepNav();
+  updateNavButtons();
+  window.scrollTo(0, 0);
+}
+
+function renderField(f) {
+  let h = '';
+  switch (f.type) {
+    case 'radio':
+      h += `<div class="field">`;
+      h += `<div class="field-label">${f.star ? '<span class="star">★</span>' : ''}${f.label}</div>`;
+      h += `<div class="options">`;
+      for (const opt of f.options) {
+        h += `<div class="opt" data-field="${f.id}" data-value="${opt}" data-multi="${f.multi||false}" onclick="selectOpt(this)">${opt}</div>`;
+      }
+      h += `</div></div>`;
+      break;
+    case 'yn':
+      h += `<div class="field">`;
+      h += `<div class="field-label">${f.star ? '<span class="star">★</span>' : ''}${f.label}</div>`;
+      h += `<div class="yn-group">`;
+      h += `<div class="yn-btn yes" data-field="${f.id}" data-value="Yes" onclick="selectYN(this)">Yes</div>`;
+      h += `<div class="yn-btn no" data-field="${f.id}" data-value="No" onclick="selectYN(this)">No</div>`;
+      h += `</div></div>`;
+      break;
+    case 'text':
+      h += `<div class="field"><div class="field-label">${f.star ? '<span class="star">★</span>' : ''}${f.label}</div>`;
+      h += `<input type="${f.inputType||'text'}" class="txt" data-field="${f.id}" onchange="saveField(this)" placeholder="${f.label}"></div>`;
+      break;
+    case 'textarea':
+      h += `<div class="field"><div class="field-label">${f.star ? '<span class="star">★</span>' : ''}${f.label}</div>`;
+      h += `<textarea class="txt" data-field="${f.id}" onchange="saveField(this)" placeholder="${f.label}"></textarea></div>`;
+      break;
+    case 'text-row':
+      h += `<div class="txt-row c${f.cols}">`;
+      for (const tf of f.fields) {
+        h += `<div class="txt-mini"><label>${tf.label}</label><input type="${tf.inputType||'text'}" class="txt" data-field="${tf.id}" onchange="saveField(this)" placeholder="${tf.label}"></div>`;
+      }
+      h += `</div>`;
+      break;
+    case 'photos':
+      h += `<div class="field"><div class="photo-label">Photos</div><div class="chk-group">`;
+      for (const item of f.items) {
+        h += `<div class="chk" data-field="${f.id}_${item.replace(/\s+/g,'_')}" onclick="toggleChk(this)"><div class="chk-icon">✓</div>${item}</div>`;
+      }
+      h += `</div></div>`;
+      break;
+    case 'checklist':
+      h += `<div class="field"><div class="chk-group">`;
+      for (const item of f.items) {
+        h += `<div class="chk" data-field="${f.id}_${item.replace(/[^\w]/g,'_')}" onclick="toggleChk(this)"><div class="chk-icon">✓</div>${item}</div>`;
+      }
+      h += `</div></div>`;
+      break;
+    case 'defect':
+      h += `<div class="defect-block">`;
+      h += `<div class="field"><div class="field-label">Defect Feature</div><div class="options">`;
+      for (const opt of ["Foundation","Roof","Walls","Windows","Mech","Floor","Other"]) {
+        h += `<div class="opt" data-field="${f.id}_feat" data-value="${opt}" onclick="selectOpt(this)">${opt}</div>`;
+      }
+      h += `</div></div>`;
+      h += `<div class="txt-row c2"><div class="txt-mini"><label>Location</label><input class="txt" data-field="${f.id}_loc" onchange="saveField(this)"></div>`;
+      h += `<div class="txt-mini"><label>Description</label><input class="txt" data-field="${f.id}_desc" onchange="saveField(this)"></div></div>`;
+      h += `<div class="txt-row c3"><div class="txt-mini"><label>Structural?</label><input class="txt" data-field="${f.id}_struct" onchange="saveField(this)" placeholder="Y/N"></div>`;
+      h += `<div class="txt-mini"><label>Action</label><input class="txt" data-field="${f.id}_action" onchange="saveField(this)" placeholder="Repair/Inspect/None"></div>`;
+      h += `<div class="txt-mini"><label>Cost $</label><input class="txt" data-field="${f.id}_cost" onchange="saveField(this)"></div></div>`;
+      h += `</div>`;
+      break;
+    case 'sub':
+      h += `<div class="subsec${f.star?' star':''}">${f.label}</div>`;
+      break;
+    case 'tip':
+      h += `<div class="tip">${f.text}</div>`;
+      break;
+    case 'beta':
+      h += `<div class="beta-notice"><strong>Practice Tool — Beta Version</strong><br>Do not use as your sole inspection tool on live assignments yet. Fill alongside your regular notes for practice. <a href="mailto:support@ieimpact.com?subject=UAD 2.6 Inspection Sheet Feedback">Send us feedback →</a></div>`;
+      break;
+  }
+  return h;
+}
+
+// ═══════════════════════════════════════
+// INTERACTIONS
+// ═══════════════════════════════════════
+function selectOpt(el) {
+  const field = el.dataset.field;
+  const value = el.dataset.value;
+  const multi = el.dataset.multi === 'true';
+
+  if (multi) {
+    el.classList.toggle('selected');
+    const parent = el.parentElement;
+    const selected = [...parent.querySelectorAll('.opt.selected')].map(o => o.dataset.value);
+    formData[field] = selected.length ? selected : undefined;
+  } else {
+    if (el.classList.contains('selected')) {
+      el.classList.remove('selected');
+      delete formData[field];
+    } else {
+      el.parentElement.querySelectorAll('.opt').forEach(o => o.classList.remove('selected'));
+      el.classList.add('selected');
+      formData[field] = value;
+    }
+  }
+  save();
+}
+
+function selectYN(el) {
+  const field = el.dataset.field;
+  const value = el.dataset.value;
+  if (el.classList.contains('selected')) {
+    el.classList.remove('selected');
+    delete formData[field];
+  } else {
+    el.parentElement.querySelectorAll('.yn-btn').forEach(b => b.classList.remove('selected'));
+    el.classList.add('selected');
+    formData[field] = value;
+  }
+  save();
+}
+
+function toggleChk(el) {
+  el.classList.toggle('checked');
+  const field = el.dataset.field;
+  formData[field] = el.classList.contains('checked');
+  save();
+}
+
+function saveField(el) {
+  formData[el.dataset.field] = el.value;
+  save();
+}
+
+function restoreValues() {
+  // Restore text fields
+  document.querySelectorAll('.txt[data-field]').forEach(el => {
+    if (formData[el.dataset.field]) el.value = formData[el.dataset.field];
+  });
+  // Restore radio/options
+  document.querySelectorAll('.opt[data-field]').forEach(el => {
+    const val = formData[el.dataset.field];
+    if (Array.isArray(val) && val.includes(el.dataset.value)) el.classList.add('selected');
+    else if (val === el.dataset.value) el.classList.add('selected');
+  });
+  // Restore Y/N
+  document.querySelectorAll('.yn-btn[data-field]').forEach(el => {
+    if (formData[el.dataset.field] === el.dataset.value) el.classList.add('selected');
+  });
+  // Restore checkboxes
+  document.querySelectorAll('.chk[data-field]').forEach(el => {
+    if (formData[el.dataset.field]) el.classList.add('checked');
+  });
+}
+
+// ═══════════════════════════════════════
+// NAVIGATION
+// ═══════════════════════════════════════
+function goToStep(i) { currentStep = i; renderStep(); }
+function nextStep() { if (currentStep < STEPS.length - 1) { currentStep++; renderStep(); } }
+function prevStep() { if (currentStep > 0) { currentStep--; renderStep(); } }
+
+function updateNavButtons() {
+  document.getElementById('prevBtn').style.visibility = currentStep === 0 ? 'hidden' : 'visible';
+  document.getElementById('nextBtn').textContent = currentStep === STEPS.length - 1 ? 'Export ✓' : 'Next →';
+  if (currentStep === STEPS.length - 1) document.getElementById('nextBtn').onclick = showExport;
+  else document.getElementById('nextBtn').onclick = nextStep;
+  document.getElementById('stepCount').textContent = `${currentStep + 1} of ${STEPS.length}`;
+}
+
+function updateProgress() {
+  const pct = ((currentStep + 1) / STEPS.length) * 100;
+  document.getElementById('progressFill').style.width = pct + '%';
+}
+
+function isStepDone(i) {
+  const step = STEPS[i];
+  return step.fields.some(f => f.id && formData[f.id] !== undefined && formData[f.id] !== '');
+}
+
+// ═══════════════════════════════════════
+// SAVE / LOAD
+// ═══════════════════════════════════════
+function save() {
+  try {
+    localStorage.setItem('ieimpact_uad26_inspect', JSON.stringify(formData));
+    localStorage.setItem('ieimpact_uad26_step', currentStep);
+    showSaveToast();
+  } catch(e) {}
+}
+
+function load() {
+  try {
+    const d = localStorage.getItem('ieimpact_uad26_inspect');
+    if (d) formData = JSON.parse(d);
+    const s = localStorage.getItem('ieimpact_uad26_step');
+    if (s !== null) currentStep = parseInt(s);
+  } catch(e) {}
+}
+
+function showSaveToast() {
+  const t = document.getElementById('saveToast');
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 1000);
+}
+
+// ═══════════════════════════════════════
+// EXPORT
+// ═══════════════════════════════════════
+function showExport() { document.getElementById('exportModal').classList.add('show'); }
+function hideExport() { document.getElementById('exportModal').classList.remove('show'); }
+
+function exportPrint() {
+  hideExport();
+  // Show all steps for printing
+  const app = document.getElementById('app');
+  let html = '';
+  for (let i = 0; i < STEPS.length; i++) {
+    const step = STEPS[i];
+    html += `<div class="step-section active" style="page-break-before:${i > 0 ? 'auto' : 'auto'}">`;
+    html += `<div class="step-title">${step.num ? 'Step ' + step.num + ': ' : ''}${step.title}</div>`;
+    for (const f of step.fields) html += renderField(f);
+    html += `</div>`;
+  }
+  app.innerHTML = html;
+  restoreValues();
+  setTimeout(() => { window.print(); renderStep(); }, 100);
+}
+
+function exportJSON() {
+  hideExport();
+  const blob = new Blob([JSON.stringify(formData, null, 2)], {type: 'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `ieIMPACT_inspection_${formData.address || 'form'}_${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function updateEmailLink() {
+  const addr = formData.address || '(no address)';
+  const subject = encodeURIComponent(`UAD 2.6 Inspection: ${addr}`);
+  const body = encodeURIComponent(`Property: ${addr}\nDate: ${formData.date || ''}\nAppraiser: ${formData.appraiser || ''}\n\nInspection data attached.\n\n---\nGenerated by ieIMPACT UAD 2.6 Web Inspection Form\nieimpact.com/inspect`);
+  document.getElementById('emailBtn').href = `mailto:support@ieimpact.com?subject=${subject}&body=${body}`;
+}
+
+function clearForm() {
+  if (confirm('Clear all data? This cannot be undone.')) {
+    formData = {};
+    currentStep = 0;
+    localStorage.removeItem('ieimpact_uad26_inspect');
+    localStorage.removeItem('ieimpact_uad26_step');
+    renderStep();
+  }
+}
+
+// ═══════════════════════════════════════
+// API INTEGRATION
+// ═══════════════════════════════════════
+async function submitToBackend() {
+  try {
+    const payload = { site: {}, exterior: {}, interior: {}, basement: {}, measurements: {} };
+    
+    // Map fields to their corresponding step (0=Master, 1=Site, 2=Exterior, etc.)
+    const fieldMap = {};
+    STEPS.forEach((step, index) => {
+       const extractIds = (arr) => {
+          arr.forEach(f => {
+             if (f.id) fieldMap[f.id] = index;
+             if (f.fields) extractIds(f.fields);
+             if (f.type === 'photos' || f.type === 'checklist') {
+                f.items.forEach(item => {
+                   const suffix = f.type === 'photos' ? item.replace(/\s+/g,'_') : item.replace(/[^\w]/g,'_');
+                   fieldMap[`${f.id}_${suffix}`] = index;
+                });
+             }
+          });
+       };
+       extractIds(step.fields);
+    });
+
+    // Populate the payload based on the mapping
+    Object.keys(formData).forEach(key => {
+       const stepIndex = fieldMap[key];
+       if (stepIndex === 0) payload[key] = formData[key];
+       else if (stepIndex === 1) payload.site[key] = formData[key];
+       else if (stepIndex === 2) payload.exterior[key] = formData[key];
+       else if (stepIndex === 3) payload.interior[key] = formData[key];
+       else if (stepIndex === 4) payload.basement[key] = formData[key];
+       else if (stepIndex === 5) payload.measurements[key] = formData[key];
+       else payload[key] = formData[key]; // Fallback for unmatched fields
+    });
+
+    const btn = document.getElementById('submitApiBtn');
+    if (btn) btn.textContent = 'Saving...';
+
+    // We use port 3002 as confirmed in the backend setup
+    const res = await fetch('http://localhost:3002/inspection26', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    if (btn) btn.textContent = 'Submit to API';
+
+    if (res.ok) {
+       const data = await res.json();
+       alert('Successfully submitted! Record ID: ' + data.id);
+    } else {
+       alert('Failed to save to backend. Status: ' + res.status);
+    }
+  } catch(e) {
+    alert('Error connecting to backend API. Ensure the server is running on port 3002.');
+    console.error(e);
+  }
+}
+
+// ═══════════════════════════════════════
+// TEMPLATES
+// ═══════════════════════════════════════
+function showTemplateMenu() {
+  const hasTemplate = !!localStorage.getItem('ieimpact_uad26_template');
+  document.getElementById('loadTemplateBtn').style.display = hasTemplate ? 'block' : 'none';
+  document.getElementById('deleteTemplateBtn').style.display = hasTemplate ? 'block' : 'none';
+  document.getElementById('templateStatus').textContent = hasTemplate ? 'You have a saved template.' : 'No template saved yet.';
+  document.getElementById('templateModal').classList.add('show');
+}
+
+function hideTemplateMenu() { document.getElementById('templateModal').classList.remove('show'); }
+
+function saveTemplate() {
+  const templateData = {...formData};
+  delete templateData.address;
+  delete templateData.city;
+  delete templateData.stzip;
+  delete templateData.date;
+  delete templateData.fileno;
+  delete templateData.borrower;
+  delete templateData.timein;
+  delete templateData.timeout;
+  delete templateData.appraiser;
+  localStorage.setItem('ieimpact_uad26_template', JSON.stringify(templateData));
+  document.getElementById('templateStatus').textContent = '✓ Template saved! Property-specific fields (address, date, borrower, file #) excluded.';
+  document.getElementById('loadTemplateBtn').style.display = 'block';
+  document.getElementById('deleteTemplateBtn').style.display = 'block';
+  showSaveToast();
+}
+
+function loadTemplate() {
+  const t = localStorage.getItem('ieimpact_uad26_template');
+  if (!t) { document.getElementById('templateStatus').textContent = 'No template saved yet.'; return; }
+  if (!confirm('Load template? This will fill in saved selections but keep your current address, date, and borrower info.')) return;
+  const template = JSON.parse(t);
+  const keep = {};
+  ['address','city','stzip','date','fileno','borrower','timein','timeout','appraiser'].forEach(k => {
+    if (formData[k]) keep[k] = formData[k];
+  });
+  formData = {...template, ...keep};
+  save();
+  hideTemplateMenu();
+  renderStep();
+  showSaveToast();
+}
+
+function deleteTemplate() {
+  if (!confirm('Delete saved template?')) return;
+  localStorage.removeItem('ieimpact_uad26_template');
+  document.getElementById('templateStatus').textContent = 'Template deleted.';
+  document.getElementById('loadTemplateBtn').style.display = 'none';
+  document.getElementById('deleteTemplateBtn').style.display = 'none';
+}
+
+// ═══════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════
+load();
+renderStep();
+setInterval(updateEmailLink, 2000);
+
+// ═══════════════════════════════════════
+// PWA — SERVICE WORKER + INSTALL PROMPT
+// ═══════════════════════════════════════
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+
+let deferredPrompt = null;
+
+// Detect platform
+const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+const isAndroid = /Android/.test(navigator.userAgent);
+const isMobile = isIOS || isAndroid || /Mobi/.test(navigator.userAgent);
+const isSafari = /Safari/.test(navigator.userAgent) && !/CriOS|Chrome/.test(navigator.userAgent);
+const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+
+// Show header Install button on mobile when not already installed
+if (isMobile && !isStandalone) {
+  const hdrBtn = document.getElementById('hdrInstallBtn');
+  if (hdrBtn) hdrBtn.classList.add('visible');
+}
+
+// Capture Android/Chrome native install event
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  if (!localStorage.getItem('ieimpact26_banner_dismissed')) {
+    setTimeout(() => showInstallBanner('android'), 3000);
+  }
+});
+
+// ── Install Guide modal ──
+function showInstallGuide() {
+  const overlay = document.getElementById('installGuideOverlay');
+  const steps = document.getElementById('installGuideSteps');
+  const actionBtn = document.getElementById('installGuideActionBtn');
+
+  if (deferredPrompt) {
+    document.getElementById('installGuideTitle').textContent = 'Install ieINSPECT';
+    document.getElementById('installGuideSubtitle').textContent = 'Works offline — use it at the property with no signal';
+    steps.innerHTML = `
+      <div class="install-guide-step">
+        <div class="install-guide-step-num">1</div>
+        <div class="install-guide-step-text"><strong>Tap "Install Now" below</strong><span>Chrome will ask you to confirm</span></div>
+      </div>
+      <div class="install-guide-step">
+        <div class="install-guide-step-num">2</div>
+        <div class="install-guide-step-text"><strong>Tap "Add" in the popup</strong><span>The app icon appears on your home screen</span></div>
+      </div>
+      <div class="install-guide-step">
+        <div class="install-guide-step-num">3</div>
+        <div class="install-guide-step-text"><strong>Open from your home screen</strong><span>Works offline — no internet needed at the property</span></div>
+      </div>`;
+    actionBtn.textContent = 'Install Now';
+    actionBtn.onclick = () => { deferredPrompt.prompt(); deferredPrompt.userChoice.then(() => { deferredPrompt = null; }); hideInstallGuide(); };
+  } else if (isIOS && isSafari) {
+    document.getElementById('installGuideTitle').textContent = 'Add to Home Screen';
+    document.getElementById('installGuideSubtitle').textContent = 'Install ieINSPECT on your iPhone or iPad';
+    steps.innerHTML = `
+      <div class="install-guide-step">
+        <div class="install-guide-step-num">1</div>
+        <div class="install-guide-step-text"><strong>Tap the Share button</strong><span>The <svg style="width:14px;height:14px;vertical-align:middle" viewBox="0 0 24 24" fill="none" stroke="#0B1D3A" stroke-width="2.5"><path d="M12 2v13M5 9l7-7 7 7"/><rect x="3" y="16" width="18" height="6" rx="1"/></svg> icon at the bottom of Safari</span></div>
+      </div>
+      <div class="install-guide-step">
+        <div class="install-guide-step-num">2</div>
+        <div class="install-guide-step-text"><strong>Tap "Add to Home Screen"</strong><span>Scroll down in the share sheet if needed</span></div>
+      </div>
+      <div class="install-guide-step">
+        <div class="install-guide-step-num">3</div>
+        <div class="install-guide-step-text"><strong>Tap "Add"</strong><span>ieINSPECT will appear on your home screen and work offline</span></div>
+      </div>`;
+    actionBtn.textContent = 'Got it';
+    actionBtn.onclick = hideInstallGuide;
+  } else {
+    document.getElementById('installGuideTitle').textContent = 'Add to Home Screen';
+    document.getElementById('installGuideSubtitle').textContent = 'Install ieINSPECT for offline use at the property';
+    steps.innerHTML = `
+      <div class="install-guide-step">
+        <div class="install-guide-step-num">1</div>
+        <div class="install-guide-step-text"><strong>Open your browser menu</strong><span>Tap the ⋮ or ··· menu at the top of your browser</span></div>
+      </div>
+      <div class="install-guide-step">
+        <div class="install-guide-step-num">2</div>
+        <div class="install-guide-step-text"><strong>Tap "Add to Home Screen"</strong><span>Or "Install App" — the option name varies by browser</span></div>
+      </div>
+      <div class="install-guide-step">
+        <div class="install-guide-step-num">3</div>
+        <div class="install-guide-step-text"><strong>Confirm and open</strong><span>ieINSPECT will appear on your home screen and work offline</span></div>
+      </div>`;
+    actionBtn.textContent = 'Got it';
+    actionBtn.onclick = hideInstallGuide;
+  }
+
+  overlay.classList.add('show');
+}
+
+function hideInstallGuide(e) {
+  if (e && e.target !== document.getElementById('installGuideOverlay')) return;
+  document.getElementById('installGuideOverlay').classList.remove('show');
+}
+
+// ── Bottom auto-banner ──
+function showInstallBanner(platform) {
+  if (isStandalone) return;
+  const banner = document.getElementById('installBanner');
+  const msg = document.getElementById('installMsg');
+  const btn = document.getElementById('installBtn');
+
+  if (platform === 'ios') {
+    const shareIcon = '<svg class="ios-share-icon" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M12 2v14M5 9l7-7 7 7"/><path d="M5 17h14v4H5z"/></svg>';
+    msg.innerHTML = 'Tap ' + shareIcon + ' then <strong>"Add to Home Screen"</strong>';
+    btn.textContent = 'Got it';
+    btn.onclick = dismissInstall;
+  }
+  setTimeout(() => banner.classList.add('show'), 500);
+}
+
+function doInstall() {
+  if (deferredPrompt) {
+    deferredPrompt.prompt();
+    deferredPrompt.userChoice.then(() => { deferredPrompt = null; });
+  }
+  document.getElementById('installBanner').classList.remove('show');
+  localStorage.setItem('ieimpact26_banner_dismissed', '1');
+}
+
+function dismissInstall() {
+  document.getElementById('installBanner').classList.remove('show');
+  localStorage.setItem('ieimpact26_banner_dismissed', '1');
+}
+
+// iOS Safari auto-banner (once per session)
+if (isIOS && isSafari && !isStandalone && !sessionStorage.getItem('ios26_banner_shown')) {
+  sessionStorage.setItem('ios26_banner_shown', '1');
+  showInstallBanner('ios');
+}
+</script>
+</body>
+</html>
+
