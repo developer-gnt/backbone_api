@@ -1,4 +1,5 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Req, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Req, UseGuards, UseInterceptors, UploadedFile } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { Inspection26Service } from './inspection26.service';
 import { CreateInspection26Dto } from './dto/create-inspection26.dto';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
@@ -12,6 +13,25 @@ export class Inspection26Controller {
   create(@Body() createDto: CreateInspection26Dto, @Req() req: any) {
     const user = req.user;
     return this.inspection26Service.create(createDto, user);
+  }
+
+  @Post('email-pdf')
+  @UseInterceptors(FileInterceptor('pdf'))
+  emailPdf(@UploadedFile() file: Express.Multer.File, @Req() req: any) {
+    const user = req.user;
+    return this.inspection26Service.emailPdf(file, user);
+  }
+
+  @Post('email-json')
+  emailJson(@Body() body: any, @Req() req: any) {
+    const user = req.user;
+    return this.inspection26Service.emailJson(body, user);
+  }
+
+  @Post('email-form-as-pdf')
+  emailFormAsPdf(@Body() body: any, @Req() req: any) {
+    const user = req.user;
+    return this.inspection26Service.emailFormAsPdf(body, user);
   }
 
   @Get()
