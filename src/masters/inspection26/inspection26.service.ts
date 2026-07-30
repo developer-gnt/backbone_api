@@ -159,9 +159,8 @@ export class Inspection26Service {
     return { message: 'PDF emailed successfully' };
   }
 
-  async emailFormAsPdf(data: any, user: any): Promise<{ message: string }> {
-    const notifyTo = process.env.SMTP_ORDER_NOTIFY_TO;
-    if (!notifyTo) throw new Error('SMTP_ORDER_NOTIFY_TO is not configured');
+  async generatePdfBytes(data: any, user: any): Promise<Uint8Array> {
+    
 
     const clientName = [user?.firstname, user?.lastname].filter(Boolean).join(' ') || user?.username || 'Client';
     const clientId = user?.id || 'Unknown';
@@ -470,7 +469,18 @@ export class Inspection26Service {
     drawInputRow([{ label: "General Comments", id: "comments" }]);
     drawInputRow([{ label: "Notes for Backbone Desktop Team", id: "team_notes" }]);
 
-    const pdfBytes = await pdfDoc.save();
+    return pdfDoc.save();
+  }
+
+  async emailFormAsPdf(data: any, user: any): Promise<{ message: string }> {
+    const notifyTo = process.env.SMTP_ORDER_NOTIFY_TO;
+    if (!notifyTo) throw new Error('SMTP_ORDER_NOTIFY_TO is not configured');
+
+    const clientName = [user?.firstname, user?.lastname].filter(Boolean).join(' ') || user?.username || 'Client';
+    const clientId = user?.id || 'Unknown';
+
+    const pdfBytes = await this.generatePdfBytes(data, user);
+
 
     await emailTransporter.sendMail({
       from: process.env.SMTP_FROM || process.env.SMTP_USER,
@@ -517,11 +527,11 @@ export class Inspection26Service {
     await emailTransporter.sendMail({
       from: process.env.SMTP_FROM || process.env.SMTP_USER,
       to: notifyTo,
-      subject: `Inspection 2.6 Form Data (JSON) Submitted`,
+      subject: `Inspection 2.6 Form Data  Submitted`,
       html: `
 <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #333; max-width: 650px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
   <div style="background-color: #2563eb; padding: 20px; text-align: center;">
-    <h2 style="color: #ffffff; margin: 0; font-size: 24px;">Inspection 2.6 Form Data (JSON)</h2>
+    <h2 style="color: #ffffff; margin: 0; font-size: 24px;">Inspection 2.6 Form Data </h2>
   </div>
   <div style="padding: 30px;">
     <p style="font-size: 16px; margin-bottom: 20px;">Hello Admin,</p>

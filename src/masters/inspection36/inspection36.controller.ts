@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Req, UseInterceptors, UploadedFile } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Req, Res, UseGuards, UseInterceptors, UploadedFile, StreamableFile } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Inspection36Service } from './inspection36.service';
 import { CreateInspection36Dto } from './dto/create-inspection36.dto';
@@ -24,6 +24,16 @@ export class Inspection36Controller {
   @Post('email-json')
   emailJson(@Body() body: any, @Req() req: any) {
     return this.inspection36Service.emailJson(body, req.user);
+  }
+
+  @Post('generate-pdf')
+  async generatePdf(@Body() body: any, @Req() req: any, @Res({ passthrough: true }) res: any): Promise<StreamableFile> {
+    const pdfBytes = await this.inspection36Service.generatePdfBytes(body, req.user);
+    res.set({
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': 'attachment; filename="inspection.pdf"',
+    });
+    return new StreamableFile(Buffer.from(pdfBytes));
   }
 
   @Post('email-form-as-pdf')

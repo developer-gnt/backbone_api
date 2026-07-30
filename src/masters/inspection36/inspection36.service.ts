@@ -167,9 +167,8 @@ export class Inspection36Service {
     return { message: 'PDF emailed successfully' };
   }
 
-  async emailFormAsPdf(data: any, user: any): Promise<{ message: string }> {
-    const notifyTo = process.env.SMTP_ORDER_NOTIFY_TO;
-    if (!notifyTo) throw new Error('SMTP_ORDER_NOTIFY_TO is not configured');
+  async generatePdfBytes(data: any, user: any): Promise<Uint8Array> {
+    
 
     const clientName = [user?.firstname, user?.lastname].filter(Boolean).join(' ') || user?.username || 'Client';
     const clientId = user?.id || 'Unknown';
@@ -504,7 +503,18 @@ export class Inspection36Service {
     drawInputRow([{ label: "Sketch / measurement notes", id: "sketch_notes" }]);
     drawInputRow([{ label: "Notes for Backbone desktop team", id: "team_notes" }]);
 
-    const pdfBytes = await pdfDoc.save();
+    return pdfDoc.save();
+  }
+
+  async emailFormAsPdf(data: any, user: any): Promise<{ message: string }> {
+    const notifyTo = process.env.SMTP_ORDER_NOTIFY_TO;
+    if (!notifyTo) throw new Error('SMTP_ORDER_NOTIFY_TO is not configured');
+
+    const clientName = [user?.firstname, user?.lastname].filter(Boolean).join(' ') || user?.username || 'Client';
+    const clientId = user?.id || 'Unknown';
+
+    const pdfBytes = await this.generatePdfBytes(data, user);
+
 
     await emailTransporter.sendMail({
       from: process.env.SMTP_FROM || process.env.SMTP_USER,
