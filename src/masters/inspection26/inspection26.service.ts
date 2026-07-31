@@ -133,7 +133,7 @@ export class Inspection26Service {
     <h2 style="color: #ffffff; margin: 0; font-size: 24px;">Inspection 2.6 Data Submitted</h2>
   </div>
   <div style="padding: 30px;">
-    <p style="font-size: 16px; margin-bottom: 20px;">Hello Admin,</p>
+    <p style="font-size: 16px; margin-bottom: 20px;">Hello Team,</p>
     <p style="font-size: 16px; margin-bottom: 20px; line-height: 1.5;">A new <strong>UAD 2.6</strong> field inspection report has been submitted.</p>
     <div style="background-color: #f8fafc; padding: 15px; border-left: 4px solid #2563eb; margin-bottom: 25px;">
       <p style="margin: 0 0 10px 0; font-size: 15px;"><strong>Submitted By:</strong> ${clientName}</p>
@@ -485,7 +485,7 @@ export class Inspection26Service {
 
     await emailTransporter.sendMail({
       from: process.env.SMTP_FROM || process.env.SMTP_USER,
-      to: notifyTo,
+      to: [notifyTo, user?.email].filter(Boolean).join(', '),
       subject: `Inspection 2.6 - ${fullAddress} - ${clientName} (ID: ${clientId}) - Submitted`,
       html: `
 <div style="font-family:'Segoe UI',sans-serif;color:#333;max-width:650px;margin:0 auto;border:1px solid #e0e0e0;border-radius:8px;overflow:hidden;box-shadow:0 4px 6px rgba(0,0,0,0.05);">
@@ -493,7 +493,7 @@ export class Inspection26Service {
     <h2 style="color:#fff;margin:0;font-size:22px;">&#128196; UAD 2.6 Inspection Submitted</h2>
   </div>
   <div style="padding:30px;">
-    <p style="font-size:16px;margin-bottom:20px;">Hello Admin,</p>
+    <p style="font-size:16px;margin-bottom:20px;">Hello Team,</p>
     <p style="font-size:16px;margin-bottom:20px;line-height:1.6;">A new <strong>UAD 2.6</strong> field inspection report has been submitted. The complete report formatted with input boxes and option pills is attached as a PDF.</p>
     <div style="background:#f8fafc;padding:20px;border-left:4px solid #060b17;border-radius:4px;margin-bottom:25px;">
       <p style="margin:0 0 8px;font-size:15px;"><strong>&#127968; Property Address:</strong> ${fullAddress}</p>
@@ -529,7 +529,7 @@ export class Inspection26Service {
 
     await emailTransporter.sendMail({
       from: process.env.SMTP_FROM || process.env.SMTP_USER,
-      to: notifyTo,
+      to: [notifyTo, user?.email].filter(Boolean).join(', '),
       subject: `Inspection 2.6 Form Data Submitted - ${fullAddress}`,
       html: `
 <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #333; max-width: 650px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
@@ -537,7 +537,7 @@ export class Inspection26Service {
     <h2 style="color: #ffffff; margin: 0; font-size: 24px;">Inspection 2.6 Form Data </h2>
   </div>
   <div style="padding: 30px;">
-    <p style="font-size: 16px; margin-bottom: 20px;">Hello Admin,</p>
+    <p style="font-size: 16px; margin-bottom: 20px;">Hello Team,</p>
     <p style="font-size: 16px; margin-bottom: 20px; line-height: 1.5;">New field inspection form data for <strong>UAD 2.6</strong> has been sent to BackBone Data Solution in JSON format.</p>
     <div style="background-color: #f8fafc; padding: 15px; border-left: 4px solid #2563eb; margin-bottom: 25px;">
       <p style="margin: 0 0 10px 0; font-size: 15px;"><strong>Property Address:</strong> ${fullAddress}</p>
