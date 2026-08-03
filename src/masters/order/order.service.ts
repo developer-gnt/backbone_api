@@ -846,32 +846,79 @@ export class OrderService {
         : undefined;
 
     const { package_id: _, attachmentTypes: __, ...dtoWithoutMeta } = dto;
+
+    let resolvedTatPrice: number | null = null;
+    let resolvedTatPackageCode: string | null = null;
+    let resolvedTatHours: number | null = null;
+    let resolvedTatPackageId: number | null = null;
+
+    const requestedTatPackageId = dto.tat_package_id || dto.package_id;
+    const requestedPackageCode = dto.package_code || dto.package;
+    const requestedTatHours = dto.tat_hours || dto.package;
+
+    if (requestedTatPackageId || requestedPackageCode || requestedTatHours) {
+      try {
+        const clientUser = await this.findNotificationUser(currentOrder.createdby);
+        const resolvedTat = await this.tatPricingService.resolveSelection(
+          {
+            clientId: clientUser?.id,
+            username: clientUser?.username || clientUser?.email || currentOrder.createdby,
+          },
+          {
+            tatPackageId: requestedTatPackageId,
+            packageCode: requestedPackageCode,
+            tatHours: requestedTatHours,
+          },
+        );
+
+        if (resolvedTat?.tatPackage) {
+          resolvedTatPackageId = Number(resolvedTat.tatPackage.id);
+          resolvedTatPackageCode =
+            `${resolvedTat.tatPackage.package_code ?? ''}`.trim() || null;
+          resolvedTatHours = Number(resolvedTat.tatPackage.tat_hours ?? 0);
+          resolvedTatPrice = Number(resolvedTat.effectivePrice ?? 0);
+        }
+      } catch (err) {
+        // Fall back to DTO values if resolution fails
+      }
+    }
+
     const payload: Partial<Order> = {
       ...dtoWithoutMeta,
+      package:
+        resolvedTatPackageCode ||
+        (dto.package ? `${dto.package}`.trim() : undefined),
+      package_code:
+        resolvedTatPackageCode ||
+        (dto.package_code ? `${dto.package_code}`.trim() : undefined),
       tat_package_id:
-        dto.tat_package_id !== undefined &&
+        resolvedTatPackageId ??
+        (dto.tat_package_id !== undefined &&
         dto.tat_package_id !== null &&
         `${dto.tat_package_id}` !== ''
           ? Number(dto.tat_package_id)
-          : undefined,
+          : undefined),
       tat_hours:
-        dto.tat_hours !== undefined &&
+        resolvedTatHours ??
+        (dto.tat_hours !== undefined &&
         dto.tat_hours !== null &&
         `${dto.tat_hours}` !== ''
           ? Number(dto.tat_hours)
-          : undefined,
+          : undefined),
       charged_amount:
-        dto.charged_amount !== undefined &&
+        resolvedTatPrice ??
+        (dto.charged_amount !== undefined &&
         dto.charged_amount !== null &&
         `${dto.charged_amount}` !== ''
           ? Number(dto.charged_amount)
-          : undefined,
+          : undefined),
       amount:
-        dto.amount !== undefined &&
+        resolvedTatPrice ??
+        (dto.amount !== undefined &&
         dto.amount !== null &&
         `${dto.amount}` !== ''
           ? Number(dto.amount)
-          : undefined,
+          : undefined),
       feedback_rating: normalizedFeedbackRating,
       modify_date: new Date(),
       modifyby:
@@ -881,24 +928,85 @@ export class OrderService {
         currentOrder.createdby,
     };
 
-    await this.orderRepo.update(Number(id), payload);
+    const oldAmount = Number(
+      currentOrder.charged_amount ?? currentOrder.amount ?? 0,
+    );
+    const targetAmount =
+      payload.charged_amount !== undefined && payload.charged_amount !== null
+        ? Number(payload.charged_amount)
+        : payload.amount !== undefined && payload.amount !== null
+          ? Number(payload.amount)
+          : oldAmount;
 
-    if (attachments.length) {
-      const attachmentTypes = Array.isArray(dto.attachmentTypes)
-        ? dto.attachmentTypes
-        : dto.attachmentTypes
-          ? [dto.attachmentTypes]
-          : [];
+    const diff = targetAmount - oldAmount;
 
-      await this.dataSource.transaction(async (manager) => {
+    await this.dataSource.transaction(async (manager) => {
+      const orders = manager.getRepository(Order);
+      const users = manager.getRepository(Users);
+      const transactions = manager.getRepository(Transaction);
+
+      if (diff !== 0) {
+        const clientUser = await this.findNotificationUser(
+          currentOrder.createdby,
+        );
+
+        if (clientUser) {
+          const currentBalance = Number(clientUser.wallete_balance ?? 0);
+
+          if (diff > 0 && currentBalance < diff) {
+            throw new BadRequestException(
+              `You do not have enough wallet balance to upgrade this order ETA. Additional balance required: ${diff} credits. Current balance: ${currentBalance} credits.`,
+            );
+          }
+
+          const newBalance = currentBalance - diff;
+          await users.update(clientUser.id, {
+            wallete_balance: newBalance,
+          });
+
+          const absDiff = Math.abs(diff);
+          const isDebit = diff > 0;
+          const nextTxId = await getNextNumericId(transactions);
+
+          await transactions.save(
+            transactions.create({
+              id: nextTxId,
+              amount: absDiff,
+              transaction_id: isDebit
+                ? `ORDER-UPDATE-DEBIT-${currentOrder.id}`
+                : `ORDER-UPDATE-REFUND-${currentOrder.id}`,
+              createdby:
+                clientUser.username ||
+                clientUser.email ||
+                currentOrder.createdby,
+              created_date: new Date(),
+              status: 'Approved',
+              mode: isDebit ? 'Debit' : 'Credit',
+              credits: isDebit ? 0 : absDiff,
+              paymentid: null,
+              orderid: `${currentOrder.id}`,
+            }),
+          );
+        }
+      }
+
+      await orders.update(Number(id), payload);
+
+      if (attachments.length) {
+        const attachmentTypes = Array.isArray(dto.attachmentTypes)
+          ? dto.attachmentTypes
+          : dto.attachmentTypes
+            ? [dto.attachmentTypes]
+            : [];
+
         await this.saveWorkingAttachments(
           manager,
           id,
           attachments,
           attachmentTypes,
         );
-      });
-    }
+      }
+    });
 
     const updatedOrder = await this.findOne(id);
 
