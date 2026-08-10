@@ -30,7 +30,7 @@ jobs:
             cd /root/backbone-app-api
 
             echo "Pulling latest code..."
-            git pull --ff-only origin main
+            git pull --ff-only origin master
 
             echo "Installing dependencies..."
             npm ci
