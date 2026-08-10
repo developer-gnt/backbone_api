@@ -3,7 +3,7 @@ name: Deploy Backbone Backend
 on:
   push:
     branches:
-      - main
+      - master
 
   workflow_dispatch:
 
