@@ -12,7 +12,7 @@ import { getNextNumericId } from 'src/utils/manual-id.util';
 
 @Injectable()
 export class UserService {
-  private readonly allowedClientPageSizes = [50, 100, 250, 500];
+  private readonly allowedClientPageSizes = [50, 100, 250, 500, 10000];
   private readonly legacySecret = 'MAKV2SPBNI99212';
   private readonly legacySalt = Buffer.from([
     73, 118, 97, 110, 32, 77, 101, 100, 118, 101, 100, 101, 118,

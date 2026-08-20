@@ -20,6 +20,8 @@ import { Download } from './entity/download.entity';
 import { Order } from './entity/order.entity';
 import { TatPricingService } from '../tat-pricing/tat-pricing.service';
 
+import { PointsService } from '../points/points.service';
+
 @Injectable()
 export class OrderService {
   constructor(
@@ -36,6 +38,7 @@ export class OrderService {
     @InjectRepository(ChatMessage)
     private readonly chatRepo: Repository<ChatMessage>,
     private readonly tatPricingService: TatPricingService,
+    private readonly pointsService: PointsService,
     private readonly dataSource: DataSource,
   ) {}
 
@@ -1076,12 +1079,31 @@ export class OrderService {
       );
     }
 
+    const isFirstFeedback = !(order.feedback || '').trim() && (order.feedback_rating == null || Number(order.feedback_rating) === 0);
+
     await this.orderRepo.update(order.id, {
       feedback: feedback || null,
       feedback_rating: feedbackRating,
       modify_date: new Date(),
       modifyby: user.username || user.email || `${user.id}`,
     });
+
+    if (isFirstFeedback) {
+      const dbUser = await this.userRepo.findOne({ where: { id: user.id } });
+      if (dbUser) {
+        await this.userRepo.update(user.id, {
+          feedback_points: Number(dbUser.feedback_points || 0) + 1,
+        });
+
+        await this.pointsService.logPointTransaction({
+          user_id: user.id,
+          points_change: 1,
+          type: 'EARNED',
+          description: `Earned 1 point from feedback on order #${order.id}`,
+          order_id: Number(order.id),
+        });
+      }
+    }
 
     const updatedOrder = await this.findOne(id);
     const propAdd = updatedOrder.subject_address || '';
@@ -1129,21 +1151,33 @@ export class OrderService {
       }
     }
 
+    const pointsMessage = isFirstFeedback 
+      ? `
+          <p>
+            <strong>1 Review Point</strong> has been added to your account under the &ldquo;Feedback Points&rdquo; section on your dashboard page.<br /><br />
+            <em>Note: Once you reach 10 points, you can redeem them for your website wallet balance.</em>
+          </p>
+        ` 
+      : '';
+
     // Notify customer (only if recipient exists)
     try {
       await this.sendOrderEmail({
         order: updatedOrder,
         subject: `Feedback for file #${updatedOrder.id} - ${propAdd}`,
         html: `
-        <div>
+        <div style="font-family: Arial, sans-serif; line-height: 1.5; color: #333;">
           <p>
             Hello,<br /><br />
-            Thank you for sharing your valuable feedback. Our management
-            will review it and get back to you if necessary.
+            Thank you for sharing your valuable feedback. Our management will review it and get back to you if necessary.
           </p>
-
+          ${pointsMessage}
           <p>
-            Thank you,<br /><br />
+            Please review your account and let us know if you have any questions.<br /><br />
+            Thank you for your business. We look forward to continuing our relationship.
+          </p>
+          <p>
+            Best regards,<br /><br />
             <b>Backbone Data Solutions Team</b><br />
             <b>+1 (760) 376-5994</b>
           </p>

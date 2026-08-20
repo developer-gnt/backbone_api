@@ -61,4 +61,16 @@ export class PointsController {
   convert(@Param('id') id: string, @Body() dto: CreatePointDto) {
     return this.pointsService.convert(id, dto);
   }
+
+  @Get('client/history')
+  @ApiOperation({ summary: 'Get point transaction history for the logged-in client' })
+  getClientHistory(@CurrentUser() user: Users) {
+    return this.pointsService.getClientHistory(user);
+  }
+
+  @Post('client-redeem')
+  @ApiOperation({ summary: 'Client redeems their feedback points for wallet credit' })
+  clientRedeem(@CurrentUser() user: Users) {
+    return this.pointsService.clientRedeem(user);
+  }
 }

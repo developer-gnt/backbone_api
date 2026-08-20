@@ -8,12 +8,20 @@ import { Repository } from 'typeorm';
 import { CreatePointDto } from './dto/create-points.dto';
 import { UpdatePointDto } from './dto/update-points.dto';
 import { Users } from 'src/user/entities/user.entity';
+import { Transaction } from '../transaction/entity/transaction.entity';
+import { getNextNumericId } from 'src/utils/manual-id.util';
+
+import { PointTransaction } from './entity/point-transaction.entity';
 
 @Injectable()
 export class PointsService {
   constructor(
     @InjectRepository(Users)
     private readonly userRepository: Repository<Users>,
+    @InjectRepository(Transaction)
+    private readonly transactionRepo: Repository<Transaction>,
+    @InjectRepository(PointTransaction)
+    private readonly pointTransactionRepo: Repository<PointTransaction>,
   ) {}
 
   private async findRegistration(dto: {
@@ -155,5 +163,72 @@ export class PointsService {
 
   async remove(id: string): Promise<any> {
     return this.findOne(id);
+  }
+
+  async clientRedeem(user: Users) {
+    const registration = await this.userRepository.findOne({
+      where: { id: Number(user.id) },
+    });
+
+    if (!registration) {
+      throw new NotFoundException('Registration not found');
+    }
+
+    const currentPoints = Number(registration.feedback_points || 0);
+
+    if (currentPoints < 10) {
+      throw new BadRequestException('You need at least 10 feedback points to redeem.');
+    }
+
+    const pointsToRedeem = currentPoints;
+
+    await this.userRepository.update(registration.id, {
+      feedback_points: 0,
+      wallete_balance: Number(registration.wallete_balance || 0) + pointsToRedeem,
+    });
+
+    const nextTxId = await getNextNumericId(this.transactionRepo);
+    await this.transactionRepo.save(
+      this.transactionRepo.create({
+        id: nextTxId,
+        amount: pointsToRedeem,
+        transaction_id: `REDEEM-FEEDBACK-${registration.id}-${Date.now()}`,
+        createdby: registration.username || registration.email || `Client ${registration.id}`,
+        created_date: new Date(),
+        status: 'Approved',
+        mode: 'Credit',
+        credits: pointsToRedeem,
+        paymentid: null,
+        orderid: null,
+      }),
+    );
+
+    await this.logPointTransaction({
+      user_id: Number(registration.id),
+      points_change: -pointsToRedeem,
+      type: 'REDEEMED',
+      description: `Redeemed ${pointsToRedeem} points for wallet credit`,
+    });
+
+    return {
+      message: `${pointsToRedeem} points successfully redeemed for $${pointsToRedeem.toFixed(2)} wallet credit!`,
+      data: await this.findOne(`${registration.id}`),
+    };
+  }
+  async logPointTransaction(data: {
+    user_id: number;
+    points_change: number;
+    type: string;
+    description?: string;
+    order_id?: number;
+  }) {
+    await this.pointTransactionRepo.save(this.pointTransactionRepo.create(data));
+  }
+
+  async getClientHistory(user: Users) {
+    return this.pointTransactionRepo.find({
+      where: { user_id: Number(user.id) },
+      order: { created_date: 'DESC' },
+    });
   }
 }

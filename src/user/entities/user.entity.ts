@@ -74,6 +74,9 @@ export class Users {
   @Column({ type: 'int', nullable: true, default: 0 })
   points: number;
 
+  @Column({ type: 'int', nullable: true, default: 0 })
+  feedback_points: number;
+
   @Column({ type: 'varchar', length: 500, nullable: true })
   type: string;
 
