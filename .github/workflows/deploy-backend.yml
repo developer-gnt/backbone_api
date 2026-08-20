@@ -35,11 +35,11 @@ jobs:
             echo "Installing dependencies..."
             npm ci
 
-            echo "Running database migrations..."
-            npm run migration
-
             echo "Building backend..."
             npm run build
+
+            echo "Running database migrations..."
+            npm run migration
 
             echo "Restarting PM2..."
             pm2 restart backbone-api
