@@ -74,6 +74,30 @@ export class PointsService {
     };
   }
 
+  async addReviewPoints(dto: CreatePointDto, user: Users) {
+    const registration = await this.findRegistration(dto);
+    const pointsToAdd = Number(dto.points ?? 0);
+
+    if (!Number.isFinite(pointsToAdd) || pointsToAdd < 0) {
+      throw new BadRequestException('Please provide a valid points value');
+    }
+
+    const updatedFeedbackPoints = Number(registration.feedback_points || 0) + pointsToAdd;
+    await this.userRepository.update(registration.id, { feedback_points: updatedFeedbackPoints });
+
+    await this.logPointTransaction({
+      user_id: Number(registration.id),
+      points_change: pointsToAdd,
+      type: 'REVIEW_POINTS',
+      description: 'From Data solution team ',
+    });
+
+    return {
+      message: 'Review Points Added Successfully',
+      data: await this.userRepository.findOne({ where: { id: registration.id } }),
+    };
+  }
+
   async findAll() {
     return this.userRepository.find({ order: { id: 'DESC' } });
   }

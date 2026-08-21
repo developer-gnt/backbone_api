@@ -28,6 +28,12 @@ export class PointsController {
     return this.pointsService.create(dto, user);
   }
 
+  @Post('review')
+  @ApiOperation({ summary: 'Add review points to a registration' })
+  addReviewPoints(@CurrentUser() user: Users, @Body() dto: CreatePointDto) {
+    return this.pointsService.addReviewPoints(dto, user);
+  }
+
   @Get()
   @ApiOperation({ summary: 'View registrations with wallet/points balances' })
   findAll() {
