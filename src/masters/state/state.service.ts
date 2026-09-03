@@ -21,7 +21,7 @@ export class StateService {
   }
 
   async findAll(): Promise<State[]> {
-    return this.stateRepo.find({ order: { id: 'DESC' } });
+    return this.stateRepo.find({ order: { city: 'ASC' } });
   }
 
   async findOne(id: string): Promise<State> {

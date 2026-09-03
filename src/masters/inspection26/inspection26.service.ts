@@ -256,7 +256,13 @@ export class Inspection26Service {
       
       options.forEach((opt) => {
         const isSelected = selectedList.includes(opt);
-        const textW = (isSelected ? boldFont : font).widthOfTextAtSize(opt, 8.5);
+        let labelToDraw = opt;
+        
+        if (isSelected && opt === "Other" && (data.other_data?.[`${id}_other`] || data[`${id}_other`])) {
+          labelToDraw = `Other: ${data.other_data?.[`${id}_other`] || data[`${id}_other`]}`;
+        }
+        
+        const textW = (isSelected ? boldFont : font).widthOfTextAtSize(labelToDraw, 8.5);
         const pillW = Math.max(textW + 16, 36);
 
         if (curX + pillW > PW - M) {
@@ -277,7 +283,7 @@ export class Inspection26Service {
           color: isSelected ? rgb(0.95, 0.96, 1.0) : rgb(0.98, 0.99, 1.0)
         });
 
-        page.drawText(opt, {
+        page.drawText(labelToDraw, {
           x: curX + 8,
           y: pillY + 6,
           size: 8.5,

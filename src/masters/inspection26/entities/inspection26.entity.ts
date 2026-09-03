@@ -41,6 +41,9 @@ export class Inspection26 extends UserBaseModifiedEntity {
   @Column({ type: 'varchar', length: 50, default: 'Draft' })
   status: string;
 
+  @Column({ type: 'jsonb', nullable: true })
+  other_data: any;
+
   @OneToOne(() => Inspection26Site, site => site.inspection, { cascade: true })
   site: Inspection26Site;
 

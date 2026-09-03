@@ -35,6 +35,9 @@ export class Inspection36 extends UserBaseModifiedEntity {
   @Column({ type: 'varchar', length: 50, default: 'Draft' })
   status: string;
 
+  @Column({ type: 'jsonb', nullable: true })
+  other_data: any;
+
   @OneToOne(() => Inspection36Arrive, arrive => arrive.inspection, { cascade: true })
   arrive: Inspection36Arrive;
 
