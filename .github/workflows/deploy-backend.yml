@@ -44,7 +44,7 @@ jobs:
             npm run migration
 
             echo "Restarting PM2..."
-            pm2 restart backbone-api
+            pm2 restart backbone-api --update-env || pm2 start dist/main.js --name backbone-api
 
             echo "Saving PM2 process list..."
             pm2 save
