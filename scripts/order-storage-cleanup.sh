@@ -46,7 +46,7 @@ echo "Current time : $(date)"
 echo "Cutoff time  : $CUTOFF (files older than this will be backed up & deleted)"
 
 BACKUP_DATE="$(date '+%Y-%m-%d_%H%M%S')"
-BACKUP_FILE="$BACKUP_DIR/orders-backup-${BACKUP_DATE}.tar"
+BACKUP_FILE="$BACKUP_DIR/orders-backup-${BACKUP_DATE}.tar.gz"
 
 FILE_LIST="$(mktemp)"
 trap 'rm -f "$FILE_LIST"' EXIT
@@ -69,15 +69,15 @@ fi
 
 FILE_COUNT="$(tr -cd '\0' < "$FILE_LIST" | wc -c)"
 echo "Files selected for cleanup: $FILE_COUNT"
-echo "Creating fast backup: $BACKUP_FILE"
+echo "Creating compressed backup: $BACKUP_FILE"
 
 # --------------------------------------------------
-# 2. CREATE FAST BACKUP (Uncompressed tar for speed)
+# 2. CREATE COMPRESSED BACKUP (gzip tar.gz)
 # --------------------------------------------------
 tar --warning=no-file-changed \
     --null \
     -T "$FILE_LIST" \
-    -cf "$BACKUP_FILE"
+    -czf "$BACKUP_FILE"
 
 # Ensure backup was created and is not empty
 if [ ! -s "$BACKUP_FILE" ]; then
