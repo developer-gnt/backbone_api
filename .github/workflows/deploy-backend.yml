@@ -29,8 +29,10 @@ jobs:
 
             cd /root/backbone-app-api
 
-            echo "Pulling latest code..."
-            git pull --ff-only origin master
+            echo "Fetching and syncing latest code..."
+            git fetch origin master
+            git reset --hard origin/master
+            chmod +x scripts/*.sh 2>/dev/null || true
 
             echo "Installing dependencies..."
             npm ci
