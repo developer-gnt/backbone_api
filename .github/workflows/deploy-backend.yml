@@ -3,7 +3,7 @@ name: Deploy Backbone Backend
 on:
   push:
     branches:
-      - master
+      - main
 
   workflow_dispatch:
 
@@ -30,8 +30,8 @@ jobs:
             cd /root/backbone-app-api
 
             echo "Fetching and syncing latest code..."
-            git fetch origin master
-            git reset --hard origin/master
+            git fetch origin main
+            git reset --hard origin/main
             chmod +x scripts/*.sh 2>/dev/null || true
 
             echo "Installing dependencies..."
