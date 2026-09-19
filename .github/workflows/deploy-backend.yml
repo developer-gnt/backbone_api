@@ -1,0 +1,54 @@
+name: Deploy Backbone Backend
+
+on:
+  push:
+    branches:
+      - master
+
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy Backbone backend to VPS
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USERNAME }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: 22
+
+          script: |
+            set -e
+
+            echo "=================================="
+            echo "Starting Backbone backend deploy"
+            echo "=================================="
+
+            cd /root/backbone-app-api
+
+            echo "Fetching and syncing latest code..."
+            git fetch origin master
+            git reset --hard origin/master
+            chmod +x scripts/*.sh 2>/dev/null || true
+
+            echo "Installing dependencies..."
+            npm ci
+
+            echo "Building backend..."
+            npm run build
+
+            echo "Running database migrations..."
+            npm run migration
+
+            echo "Restarting PM2..."
+            pm2 restart backbone-api --update-env || pm2 start dist/main.js --name backbone-api
+
+            echo "Saving PM2 process list..."
+            pm2 save
+
+            echo "=================================="
+            echo "Backend deployment completed"
+            echo "===============================-==="
