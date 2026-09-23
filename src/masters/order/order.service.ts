@@ -126,7 +126,7 @@ export class OrderService {
       );
     }
 
-    return this.dataSource.transaction(async (manager) => {
+    const result = await this.dataSource.transaction(async (manager) => {
       const orders = manager.getRepository(Order);
       const users = manager.getRepository(Users);
       const transactions = manager.getRepository(Transaction);
@@ -218,6 +218,23 @@ export class OrderService {
         order: savedOrder,
       };
     });
+
+    const client = await this.findNotificationUser(result.order.createdby);
+    const clientName =
+      `${client?.firstname ?? ''} ${client?.lastname ?? ''}`.trim() ||
+      client?.companyname ||
+      client?.username ||
+      result.order.createdby ||
+      'Client';
+    const address = result.order.subject_address || '';
+
+    await this.sendOrderEmail({
+      order: result.order,
+      subject: `New Order File #${result.order.id} - ${address}`,
+      html: `<div><p>Hello ${clientName},<br/><br/>Thank you for placing your order with Backbone Data Solutions.<br/><br/>File #${result.order.id}<br/><br/>Address: ${address}<br/><br/>We have successfully received your appraisal order. Our team has started processing it.<br/><br/></p><p>Thank you,<br/><br/><b>Backbone Data Solutions Team</b><br/><b>+1 (760) 376-5994</b></p></div>`,
+    });
+
+    return result;
   }
 
   async getOrders(filters?: { status?: string; createdby?: string }) {
@@ -422,16 +439,22 @@ export class OrderService {
       }
 
       this.splitEmails(options.extraEmails).forEach((email) => to.add(email));
+      this.splitEmails(process.env.SMTP_ORDER_NOTIFY_TO).forEach((email) => to.add(email));
 
       if (!to.size) {
         return;
       }
 
+      const bccList = [
+        ...this.splitEmails(client.bcc),
+        ...this.splitEmails(process.env.SMTP_BCC),
+      ];
+
       await emailTransporter.sendMail({
         from: process.env.SMTP_FROM || process.env.SMTP_USER,
         to: Array.from(to),
         cc: this.splitEmails(client.cc),
-        bcc: Array.from(new Set([...this.splitEmails(client.bcc), 'backboneappraisal2021@gmail.com'])),
+        bcc: bccList.length ? Array.from(new Set(bccList)) : undefined,
         subject: options.subject,
         html: options.html,
         attachments: options.attachments,
@@ -748,8 +771,7 @@ export class OrderService {
     const supportEmail =
       process.env.SMTP_NOTIFY_TO ||
       process.env.SMTP_FROM ||
-      process.env.SMTP_USER ||
-      'backboneappraisal2021@gmail.com';
+      process.env.SMTP_USER ;
 
     const smtpConfigured = Boolean(
       process.env.SMTP_HOST &&

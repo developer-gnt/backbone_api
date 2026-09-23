@@ -98,7 +98,7 @@ export class NotificationService {
 
     const recipients = [
       email,
-      process.env.SMTP_NOTIFY_TO || 'backboneappraisal2021@gmail.com',
+      process.env.SMTP_NOTIFY_TO ,
     ].filter(Boolean);
 
     const smtpConfigured = Boolean(
