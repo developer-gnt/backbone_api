@@ -445,16 +445,9 @@ export class OrderService {
         return;
       }
 
-      const bccList = [
-        ...this.splitEmails(client.bcc),
-        ...this.splitEmails(process.env.SMTP_BCC),
-      ];
-
       await emailTransporter.sendMail({
         from: process.env.SMTP_FROM || process.env.SMTP_USER,
         to: Array.from(to),
-        cc: this.splitEmails(client.cc),
-        bcc: bccList.length ? Array.from(new Set(bccList)) : undefined,
         subject: options.subject,
         html: options.html,
         attachments: options.attachments,
