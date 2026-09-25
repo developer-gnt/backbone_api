@@ -547,32 +547,22 @@ export class OrderService {
       // Remove duplicates
       const toList = Array.from(new Set(Array.from(to)));
       const ccList = Array.from(new Set(this.splitEmails(clientCc)));
-      const bccList = Array.from(
-        new Set([
-          ...this.splitEmails(process.env.SMTP_ORDER_NOTIFY_TO),
-          ...this.splitEmails(clientBcc),
-        ]),
-      );
+      const bccList = Array.from(new Set(this.splitEmails(clientBcc)));
 
-      await emailTransporter.sendMail({
+      if (!toList.length && !ccList.length && !bccList.length) {
+        console.warn('No recipients found. Email skipped.');
+        return;
+      }
+
+      const mailOptions = {
         from: process.env.SMTP_FROM || process.env.SMTP_USER,
-        to: Array.from(to),
+        to: toList,
+        cc: ccList.length ? ccList : undefined,
+        bcc: bccList.length ? bccList : undefined,
         subject: options.subject,
         html: options.html,
         attachments: options.attachments,
       };
-
-      // console.log('========== MAIL OPTIONS ==========');
-      // console.log(JSON.stringify(mailOptions, null, 2));
-
-      // if (
-      //   !mailOptions.to.length &&
-      //   !mailOptions.cc.length &&
-      //   !mailOptions.bcc.length
-      // ) {
-      //   console.warn('No recipients found. Email skipped.');
-      //   return;
-      // }
 
       const info = await emailTransporter.sendMail(mailOptions);
 
@@ -1126,11 +1116,7 @@ export class OrderService {
     const supportEmail =
       process.env.SMTP_ORDER_NOTIFY_TO ||
       process.env.SMTP_FROM ||
-<<<<<<< ours
       process.env.SMTP_USER;
-=======
-      process.env.SMTP_USER ;
->>>>>>> theirs
 
     const smtpConfigured = Boolean(
       process.env.SMTP_HOST &&
