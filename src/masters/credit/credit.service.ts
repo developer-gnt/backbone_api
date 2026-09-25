@@ -91,7 +91,7 @@ export class CreditService {
     await emailTransporter.sendMail({
       from: process.env.SMTP_FROM || process.env.SMTP_USER,
       to: recipient,
-      // bcc: process.env.SMTP_ORDER_NOTIFY_TO || 'orders@backbonedatasolutions.com',
+      bcc: process.env.SMTP_NOTIFY_TO || '',
       subject: 'Congratulations💥- Credits Added',
       html,
     });
