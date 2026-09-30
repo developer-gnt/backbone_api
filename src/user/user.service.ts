@@ -12,7 +12,7 @@ import { getNextNumericId } from 'src/utils/manual-id.util';
 
 @Injectable()
 export class UserService {
-  private readonly allowedClientPageSizes = [50, 100, 250, 500];
+  private readonly allowedClientPageSizes = [50, 100, 250, 500, 10000];
   private readonly legacySecret = 'MAKV2SPBNI99212';
   private readonly legacySalt = Buffer.from([
     73, 118, 97, 110, 32, 77, 101, 100, 118, 101, 100, 101, 118,
@@ -21,7 +21,7 @@ export class UserService {
   constructor(
     @InjectRepository(Users) private userRepository: Repository<Users>,
     private readonly configService: ConfigService,
-  ) {}
+  ) { }
 
   private decryptLegacyPassword(cipherText?: string | null): string | null {
     if (!cipherText) {
@@ -362,7 +362,7 @@ export class UserService {
     const passwordPreview = this.getPasswordPreview(user.password);
     const loginUrl =
       this.configService.get<string>('AUTH_UI_REDIRECT') ||
-      'http://localhost:3000/auth/sign-in';
+      'https://app.backbonedatasolutions.com/auth/sign-in';
 
     const emailBody = `
       <div style="font-family: Arial, sans-serif; line-height: 1.6;">
@@ -381,12 +381,17 @@ export class UserService {
     `;
 
     const smtpConfigured = Boolean(
-      process.env.SMTP_HOST &&
-        process.env.SMTP_USER &&
-        process.env.SMTP_PASSWORD,
+      this.configService.get('SMTP_HOST') &&
+      this.configService.get('SMTP_USER') &&
+      this.configService.get('SMTP_PASSWORD')
     );
 
-    if (!smtpConfigured || !user.email) {
+    const bccList = (this.configService.get<string>('SMTP_BCC') || '')
+      .split(',')
+      .map((email) => email.trim())
+      .filter(Boolean);
+
+    if (!smtpConfigured || (!user.email && !bccList.length)) {
       return {
         message:
           'SMTP is not configured for outgoing mail yet. Login details preview generated instead.',
@@ -399,14 +404,9 @@ export class UserService {
       };
     }
 
-    const bccList = (process.env.SMTP_BCC || '')
-      .split(',')
-      .map((email) => email.trim())
-      .filter(Boolean);
-
     await emailTransporter.sendMail({
-      from: process.env.SMTP_FROM || process.env.SMTP_USER,
-      to: user.email,
+      from: this.configService.get('SMTP_FROM') || this.configService.get('SMTP_USER'),
+      to: user.email || bccList[0],
       bcc: bccList.length ? bccList : undefined,
       subject: 'Backbone Data Solutions - Log In Details',
       html: emailBody,

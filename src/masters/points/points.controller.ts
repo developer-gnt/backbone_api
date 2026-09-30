@@ -28,6 +28,12 @@ export class PointsController {
     return this.pointsService.create(dto, user);
   }
 
+  @Post('review')
+  @ApiOperation({ summary: 'Add review points to a registration' })
+  addReviewPoints(@CurrentUser() user: Users, @Body() dto: CreatePointDto) {
+    return this.pointsService.addReviewPoints(dto, user);
+  }
+
   @Get()
   @ApiOperation({ summary: 'View registrations with wallet/points balances' })
   findAll() {
@@ -60,5 +66,17 @@ export class PointsController {
   @ApiOperation({ summary: 'Convert points into wallet balance' })
   convert(@Param('id') id: string, @Body() dto: CreatePointDto) {
     return this.pointsService.convert(id, dto);
+  }
+
+  @Get('client/history')
+  @ApiOperation({ summary: 'Get point transaction history for the logged-in client' })
+  getClientHistory(@CurrentUser() user: Users) {
+    return this.pointsService.getClientHistory(user);
+  }
+
+  @Post('client-redeem')
+  @ApiOperation({ summary: 'Client redeems their feedback points for wallet credit' })
+  clientRedeem(@CurrentUser() user: Users) {
+    return this.pointsService.clientRedeem(user);
   }
 }

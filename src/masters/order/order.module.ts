@@ -9,10 +9,12 @@ import { ChatMessage } from './entity/chat-message.entity';
 import { CompletedDownload } from './entity/completed-download.entity';
 import { Download } from './entity/download.entity';
 import { Order } from './entity/order.entity';
+import { PointsModule } from '../points/points.module';
 
 @Module({
   imports: [
     TatPricingModule,
+    PointsModule,
     TypeOrmModule.forFeature([
       Order,
       Download,

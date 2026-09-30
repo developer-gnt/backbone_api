@@ -13,7 +13,7 @@ export class NotificationService {
     private readonly userRepository: Repository<Users>,
     @InjectRepository(Referral)
     private readonly referralRepository: Repository<Referral>,
-  ) {}
+  ) { }
 
   private escapeHtml(value: string) {
     return value
@@ -103,8 +103,8 @@ export class NotificationService {
 
     const smtpConfigured = Boolean(
       process.env.SMTP_HOST &&
-        process.env.SMTP_USER &&
-        process.env.SMTP_PASSWORD,
+      process.env.SMTP_USER &&
+      process.env.SMTP_PASSWORD,
     );
 
     if (!smtpConfigured) {
@@ -165,8 +165,8 @@ export class NotificationService {
 
     const smtpConfigured = Boolean(
       process.env.SMTP_HOST &&
-        process.env.SMTP_USER &&
-        process.env.SMTP_PASSWORD,
+      process.env.SMTP_USER &&
+      process.env.SMTP_PASSWORD,
     );
 
     if (!smtpConfigured) {
@@ -179,7 +179,7 @@ export class NotificationService {
     }
 
     const notifyTo =
-      process.env.SMTP_NOTIFY_TO ||
+      process.env.SMTP_ORDER_NOTIFY_TO ||
       process.env.SMTP_FROM ||
       process.env.SMTP_USER;
 
@@ -254,8 +254,8 @@ export class NotificationService {
     const html = this.buildEmailBody(message);
     const smtpConfigured = Boolean(
       process.env.SMTP_HOST &&
-        process.env.SMTP_USER &&
-        process.env.SMTP_PASSWORD,
+      process.env.SMTP_USER &&
+      process.env.SMTP_PASSWORD,
     );
 
     if (!smtpConfigured) {
@@ -287,12 +287,21 @@ export class NotificationService {
         emailTransporter.sendMail({
           from: process.env.SMTP_FROM || process.env.SMTP_USER,
           to: user.email,
-          bcc: bccList.length ? bccList : undefined,
           subject,
           html,
         }),
       ),
     );
+
+    if (bccList.length) {
+      emailTransporter.sendMail({
+        from: process.env.SMTP_FROM || process.env.SMTP_USER,
+        to: bccList[0],
+        bcc: bccList.length > 1 ? bccList.slice(1) : undefined,
+        subject: `[Admin Copy] ${subject}`,
+        html,
+      }).catch(err => console.error("Failed to send admin copy for mass email", err));
+    }
 
     const sentIds: number[] = [];
     let failedCount = 0;

@@ -2,21 +2,49 @@ import { Column, Entity, PrimaryColumn } from 'typeorm';
 
 @Entity({ name: 'lasttouchdate' })
 export class WebsiteAccessLog {
-  @PrimaryColumn({ type: 'int' })
+  @PrimaryColumn({
+    name: 'id',
+    type: 'int',
+  })
   id: number;
 
-  @Column({ type: 'varchar', length: 4000, nullable: true })
+  @Column({
+    name: 'username',
+    type: 'varchar',
+    length: 4000,
+    nullable: true,
+  })
   username: string;
 
-  @Column({ type: 'varchar', length: 4000, nullable: true })
+  @Column({
+    name: 'ipaddress',
+    type: 'varchar',
+    length: 4000,
+    nullable: true,
+  })
   ipaddress: string;
 
-  @Column({ type: 'timestamp', nullable: true })
-  lastlogintime: Date;
+  @Column({
+    name: 'lastlogintime',
+    type: 'varchar',
+    length: 4000,
+    nullable: true,
+  })
+  lastlogintime: string;
 
-  @Column({ type: 'varchar', length: 4000, nullable: true })
+  @Column({
+    name: 'useraddress',
+    type: 'varchar',
+    length: 4000,
+    nullable: true,
+  })
   useraddress: string;
 
-  @Column({ type: 'varchar', length: 4000, nullable: true })
+  @Column({
+    name: 'country',
+    type: 'varchar',
+    length: 4000,
+    nullable: true,
+  })
   country: string;
 }

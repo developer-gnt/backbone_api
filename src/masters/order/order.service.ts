@@ -20,6 +20,8 @@ import { Download } from './entity/download.entity';
 import { Order } from './entity/order.entity';
 import { TatPricingService } from '../tat-pricing/tat-pricing.service';
 
+import { PointsService } from '../points/points.service';
+
 @Injectable()
 export class OrderService {
   constructor(
@@ -36,6 +38,7 @@ export class OrderService {
     @InjectRepository(ChatMessage)
     private readonly chatRepo: Repository<ChatMessage>,
     private readonly tatPricingService: TatPricingService,
+    private readonly pointsService: PointsService,
     private readonly dataSource: DataSource,
   ) {}
 
@@ -61,7 +64,9 @@ export class OrderService {
       mimetype: string;
     }> = [],
   ) {
-    const actor = await this.userRepo.findOne({ where: { id: Number(user.id) } });
+    const actor = await this.userRepo.findOne({
+      where: { id: Number(user.id) },
+    });
 
     if (!actor) {
       throw new NotFoundException('Authenticated user could not be found');
@@ -70,7 +75,10 @@ export class OrderService {
     const requestedCreatedBy = dto.createdby?.trim();
     const createdForUser = requestedCreatedBy
       ? await this.userRepo.findOne({
-          where: [{ username: requestedCreatedBy }, { email: requestedCreatedBy }],
+          where: [
+            { username: requestedCreatedBy },
+            { email: requestedCreatedBy },
+          ],
         })
       : null;
 
@@ -81,7 +89,11 @@ export class OrderService {
           ? createdForUser
           : null;
 
-    if ((actor.role ?? '').toLowerCase() !== 'client' && requestedCreatedBy && !walletOwner) {
+    if (
+      (actor.role ?? '').toLowerCase() !== 'client' &&
+      requestedCreatedBy &&
+      !walletOwner
+    ) {
       throw new BadRequestException(
         'Please enter a valid client username or email before placing the order.',
       );
@@ -174,7 +186,9 @@ export class OrderService {
 
       const savedOrder = await orders.save(order);
 
-      let updatedBalance = Number(walletOwner?.wallete_balance ?? actor.wallete_balance ?? 0);
+      let updatedBalance = Number(
+        walletOwner?.wallete_balance ?? actor.wallete_balance ?? 0,
+      );
 
       if (walletOwner && debitAmount > 0) {
         updatedBalance -= debitAmount;
@@ -214,6 +228,53 @@ export class OrderService {
           attachmentTypes,
         );
       }
+
+      await this.sendOrderEmail({
+        order: savedOrder,
+        subject: `New Order File #${savedOrder.id} - ${savedOrder.subject_address ?? ''}`,
+        html: `
+    <div>
+      <p>
+        Hello ${savedOrder.createdby},
+        <br/><br/>
+
+        Thank you for placing your order with Backbone Data Solutions.
+
+        <br/><br/>
+
+        File #${savedOrder.id}
+
+        <br/><br/>
+
+        Address:
+        ${savedOrder.subject_address ?? ''}
+
+        <br/><br/>
+
+        
+
+        <br/><br/>
+
+        We have successfully received your appraisal order.
+        Our team has started processing it.
+
+      </p>
+
+      <p>
+        Thank you,
+
+        <br/><br/>
+
+        <b>Backbone Data Solutions Team</b>
+
+        <br/>
+
+        +1 (760) 376-5994
+      </p>
+
+    </div>
+  `,
+      });
 
       return {
         message: 'Order created successfully',
@@ -310,7 +371,10 @@ export class OrderService {
       msg_time: item.msg_time,
     }));
 
-    if (order.message && !history.some((entry) => entry.message === order.message)) {
+    if (
+      order.message &&
+      !history.some((entry) => entry.message === order.message)
+    ) {
       history.push({
         order_id: order.id,
         message: order.message,
@@ -321,7 +385,10 @@ export class OrderService {
       });
     }
 
-    if (order.reply && !history.some((entry) => entry.message === order.reply)) {
+    if (
+      order.reply &&
+      !history.some((entry) => entry.message === order.reply)
+    ) {
       history.push({
         order_id: order.id,
         message: order.reply,
@@ -334,7 +401,8 @@ export class OrderService {
 
     history.sort(
       (a, b) =>
-        new Date(a.msg_time ?? 0).getTime() - new Date(b.msg_time ?? 0).getTime(),
+        new Date(a.msg_time ?? 0).getTime() -
+        new Date(b.msg_time ?? 0).getTime(),
     );
 
     return {
@@ -355,7 +423,8 @@ export class OrderService {
     }
 
     const order = await this.ensureOrderAccess(id, user);
-    const senderRole = (user.role ?? '').toLowerCase() === 'client' ? 'client' : 'team';
+    const senderRole =
+      (user.role ?? '').toLowerCase() === 'client' ? 'client' : 'team';
     const senderName =
       senderRole === 'team'
         ? 'Backbone Data Solutions'
@@ -411,8 +480,17 @@ export class OrderService {
       return null;
     }
 
+    const whereConditions: any[] = [
+      { email: normalized },
+      { username: normalized },
+    ];
+
+    if (/^\d+$/.test(normalized)) {
+      whereConditions.push({ id: Number(normalized) });
+    }
+
     return this.userRepo.findOne({
-      where: [{ email: normalized }, { username: normalized }],
+      where: whereConditions,
     });
   }
 
@@ -431,37 +509,94 @@ export class OrderService {
     attachments?: Array<{ filename?: string; path: string }>;
   }) {
     try {
+      // console.log('========== ORDER EMAIL ==========');
+      // console.log('Order ID:', options.order.id);
+      // console.log('Created By:', options.order.createdby);
+
       const client = await this.findNotificationUser(options.order.createdby);
 
-      if (!client) {
-        return;
-      }
+      // console.log('Client Found:', client);
 
       const to = new Set<string>();
-      const sendmail = `${client.sendmail ?? ''}`.trim().toLowerCase();
 
-      if ((sendmail === '' || sendmail === 'yes') && client.email) {
-        to.add(client.email.trim());
-      } else if (client.altmail?.trim()) {
-        to.add(client.altmail.trim());
+      let clientCc = '';
+      let clientBcc = '';
+
+      if (client) {
+        const sendmail = `${client.sendmail ?? ''}`.trim().toLowerCase();
+
+        // console.log('Raw Sendmail:', client.sendmail);
+        // console.log('Normalized Sendmail:', sendmail);
+        // console.log('Primary Email:', client.email);
+        // console.log('Alternate Email:', client.altmail);
+
+        // Add primary email unless sendmail is explicitly "no"
+        if (client.email && sendmail !== 'no') {
+          this.splitEmails(client.email).forEach((email) => to.add(email));
+        }
+
+        // Fallback to alternate email only if no primary email was added
+        if (!to.size && client.altmail) {
+          this.splitEmails(client.altmail).forEach((email) => to.add(email));
+        }
+
+        clientCc = client.cc ?? '';
+        clientBcc = client.bcc ?? '';
+      } else {
+        console.warn(
+          `No client found for createdby = ${options.order.createdby}`,
+        );
       }
 
+      // Extra recipients
       this.splitEmails(options.extraEmails).forEach((email) => to.add(email));
       this.splitEmails(process.env.SMTP_ORDER_NOTIFY_TO).forEach((email) => to.add(email));
 
-      if (!to.size) {
+      // Remove duplicates
+      const toList = Array.from(new Set(Array.from(to)));
+      const ccList = Array.from(new Set(this.splitEmails(clientCc)));
+      const bccList = Array.from(new Set(this.splitEmails(clientBcc)));
+
+      if (!toList.length && !ccList.length && !bccList.length) {
+        console.warn('No recipients found. Email skipped.');
         return;
       }
 
-      await emailTransporter.sendMail({
+      const mailOptions = {
         from: process.env.SMTP_FROM || process.env.SMTP_USER,
-        to: Array.from(to),
+        to: toList,
+        cc: ccList.length ? ccList : undefined,
+        bcc: bccList.length ? bccList : undefined,
         subject: options.subject,
         html: options.html,
         attachments: options.attachments,
-      });
+      };
+
+      const info = await emailTransporter.sendMail(mailOptions);
+
+      // console.log('========== SMTP RESPONSE ==========');
+      // console.log('Accepted:', info.accepted);
+      // console.log('Rejected:', info.rejected);
+      // console.log('Pending:', info.pending);
+      // console.log('Envelope:', info.envelope);
+      // console.log('Message ID:', info.messageId);
+      // console.log('Response:', info.response);
+
+      // Verify expected recipients
+      const expectedRecipients = [...toList, ...ccList, ...bccList];
+      const acceptedRecipients = (info.accepted || []).map((email) =>
+        String(email).toLowerCase(),
+      );
+
+      const missingRecipients = expectedRecipients.filter(
+        (email) => !acceptedRecipients.includes(email.toLowerCase()),
+      );
+
+      if (missingRecipients.length) {
+        console.warn('Recipients not accepted by SMTP:', missingRecipients);
+      }
     } catch (error) {
-      console.log('[Order email notification failed]', error);
+      console.error('[Order email notification failed]', error);
     }
   }
 
@@ -481,7 +616,12 @@ export class OrderService {
       return [] as Download[];
     }
 
-    const uploadDir = join(process.cwd(), 'UplodedOrderFiles', 'orders', `${orderId}`);
+    const uploadDir = join(
+      process.cwd(),
+      'UplodedOrderFiles',
+      'orders',
+      `${orderId}`,
+    );
     await mkdir(uploadDir, { recursive: true });
 
     let nextId = await getNextNumericId(downloads);
@@ -531,7 +671,13 @@ export class OrderService {
       return [] as CompletedDownload[];
     }
 
-    const uploadDir = join(process.cwd(), 'UplodedOrderFiles', 'orders', `${orderId}`, 'completed');
+    const uploadDir = join(
+      process.cwd(),
+      'UplodedOrderFiles',
+      'orders',
+      `${orderId}`,
+      'completed',
+    );
     await mkdir(uploadDir, { recursive: true });
 
     let nextId = await getNextNumericId(completedRepo);
@@ -614,9 +760,11 @@ export class OrderService {
     }> = [],
   ) {
     const order = await this.findOne(id);
-    const replaceExisting = `${body.replace_existing ?? ''}`.trim().toLowerCase() === 'true';
+    const replaceExisting =
+      `${body.replace_existing ?? ''}`.trim().toLowerCase() === 'true';
     const remark = `${body.emp_remark ?? body.resend_remark ?? ''}`.trim();
-    const sendCompletedEmail = `${body.complete_notification_email ?? 'Yes'}`.trim() || 'Yes';
+    const sendCompletedEmail =
+      `${body.complete_notification_email ?? 'Yes'}`.trim() || 'Yes';
 
     await this.dataSource.transaction(async (manager) => {
       const orders = manager.getRepository(Order);
@@ -630,7 +778,12 @@ export class OrderService {
         modify_date: new Date(),
       });
 
-      await this.saveCompletedAttachments(manager, id, attachments, replaceExisting);
+      await this.saveCompletedAttachments(
+        manager,
+        id,
+        attachments,
+        replaceExisting,
+      );
 
       if (client) {
         await users.update(client.id, {
@@ -644,7 +797,10 @@ export class OrderService {
       order: { id: 'DESC' },
     });
 
-    if (sendCompletedEmail.toLowerCase() === 'yes' || `${body.extra_emails ?? ''}`.trim()) {
+    if (
+      sendCompletedEmail.toLowerCase() === 'yes' ||
+      `${body.extra_emails ?? ''}`.trim()
+    ) {
       const subjectAddress = order.subject_address || '';
       const summaryItems = `${body.summary_notes ?? ''}`
         .split(/\r?\n|,/)
@@ -655,10 +811,18 @@ export class OrderService {
         : '';
       const resendText = `${body.resend_remark ?? ''}`.trim();
 
+      const client = await this.findNotificationUser(order.createdby);
+
+      const clientName =
+        `${client?.firstname ?? ''} ${client?.lastname ?? ''}`.trim() ||
+        client?.firstname ||
+        client?.username ||
+        order.createdby ||
+        'Client';
       await this.sendOrderEmail({
         order,
         subject: `${replaceExisting ? 'Updated Completed' : 'Completed'} File #${order.id} - ${subjectAddress}`,
-        html: `<div><p>Hello ${order.createdby || 'Client'},<br/><br/>The following appraisal order has been completed.<br/>Please login and download files from dashboard.<br/><br/>File #-${order.id}<br/><br/>Address: ${subjectAddress}<br/><br/>${remark || resendText ? `Remark: ${remark || resendText}<br/><br/>` : ''}${summaryHtml}</p><p>Thank you,<br/><br/><b>Backbone Data Solutions Team</b><br/><b>+1 (760) 376-5994</b></p></div>`,
+        html: `<div><p>Hello ${clientName || 'Client'},<br/><br/>The following appraisal order has been completed.<br/>Please login and download files from dashboard.<br/><br/>File #-${order.id}<br/><br/>Address: ${subjectAddress}<br/><br/>${remark || resendText ? `Remark: ${remark || resendText}<br/><br/>` : ''}${summaryHtml}</p><p>Thank you,<br/><br/><b>Backbone Data Solutions Team</b><br/><b>+1 (760) 376-5994</b></p></div>`,
         extraEmails: body.extra_emails,
         attachments: completedFiles
           .filter((item) => `${item.filepath ?? ''}`.trim())
@@ -687,7 +851,9 @@ export class OrderService {
       mimetype: string;
     }> = [],
   ) {
-    const currentOrder = user ? await this.ensureOrderAccess(id, user) : await this.findOne(id);
+    const currentOrder = user
+      ? await this.ensureOrderAccess(id, user)
+      : await this.findOne(id);
     const normalizedFeedbackRating =
       dto.feedback_rating !== undefined &&
       dto.feedback_rating !== null &&
@@ -696,49 +862,213 @@ export class OrderService {
         : undefined;
 
     const { package_id: _, attachmentTypes: __, ...dtoWithoutMeta } = dto;
+
+    let resolvedTatPrice: number | null = null;
+    let resolvedTatPackageCode: string | null = null;
+    let resolvedTatHours: number | null = null;
+    let resolvedTatPackageId: number | null = null;
+
+    const requestedTatPackageId = dto.tat_package_id || dto.package_id;
+    const requestedPackageCode = dto.package_code || dto.package;
+    const requestedTatHours = dto.tat_hours || dto.package;
+
+    if (requestedTatPackageId || requestedPackageCode || requestedTatHours) {
+      try {
+        const clientUser = await this.findNotificationUser(currentOrder.createdby);
+        const resolvedTat = await this.tatPricingService.resolveSelection(
+          {
+            clientId: clientUser?.id,
+            username: clientUser?.username || clientUser?.email || currentOrder.createdby,
+          },
+          {
+            tatPackageId: requestedTatPackageId,
+            packageCode: requestedPackageCode,
+            tatHours: requestedTatHours,
+          },
+        );
+
+        if (resolvedTat?.tatPackage) {
+          resolvedTatPackageId = Number(resolvedTat.tatPackage.id);
+          resolvedTatPackageCode =
+            `${resolvedTat.tatPackage.package_code ?? ''}`.trim() || null;
+          resolvedTatHours = Number(resolvedTat.tatPackage.tat_hours ?? 0);
+          resolvedTatPrice = Number(resolvedTat.effectivePrice ?? 0);
+        }
+      } catch (err) {
+        // Fall back to DTO values if resolution fails
+      }
+    }
+
     const payload: Partial<Order> = {
       ...dtoWithoutMeta,
+      package:
+        resolvedTatPackageCode ||
+        (dto.package ? `${dto.package}`.trim() : undefined),
+      package_code:
+        resolvedTatPackageCode ||
+        (dto.package_code ? `${dto.package_code}`.trim() : undefined),
       tat_package_id:
-        dto.tat_package_id !== undefined &&
+        resolvedTatPackageId ??
+        (dto.tat_package_id !== undefined &&
         dto.tat_package_id !== null &&
         `${dto.tat_package_id}` !== ''
           ? Number(dto.tat_package_id)
-          : undefined,
+          : undefined),
       tat_hours:
-        dto.tat_hours !== undefined && dto.tat_hours !== null && `${dto.tat_hours}` !== ''
+        resolvedTatHours ??
+        (dto.tat_hours !== undefined &&
+        dto.tat_hours !== null &&
+        `${dto.tat_hours}` !== ''
           ? Number(dto.tat_hours)
-          : undefined,
+          : undefined),
       charged_amount:
-        dto.charged_amount !== undefined &&
+        resolvedTatPrice ??
+        (dto.charged_amount !== undefined &&
         dto.charged_amount !== null &&
         `${dto.charged_amount}` !== ''
           ? Number(dto.charged_amount)
-          : undefined,
+          : undefined),
       amount:
-        dto.amount !== undefined && dto.amount !== null && `${dto.amount}` !== ''
+        resolvedTatPrice ??
+        (dto.amount !== undefined &&
+        dto.amount !== null &&
+        `${dto.amount}` !== ''
           ? Number(dto.amount)
-          : undefined,
+          : undefined),
       feedback_rating: normalizedFeedbackRating,
       modify_date: new Date(),
       modifyby:
-        user?.username || user?.email || currentOrder.modifyby || currentOrder.createdby,
+        user?.username ||
+        user?.email ||
+        currentOrder.modifyby ||
+        currentOrder.createdby,
     };
 
-    await this.orderRepo.update(Number(id), payload);
+    const oldAmount = Number(
+      currentOrder.charged_amount ?? currentOrder.amount ?? 0,
+    );
+    const targetAmount =
+      payload.charged_amount !== undefined && payload.charged_amount !== null
+        ? Number(payload.charged_amount)
+        : payload.amount !== undefined && payload.amount !== null
+          ? Number(payload.amount)
+          : oldAmount;
 
-    if (attachments.length) {
-      const attachmentTypes = Array.isArray(dto.attachmentTypes)
-        ? dto.attachmentTypes
-        : dto.attachmentTypes
-          ? [dto.attachmentTypes]
-          : [];
+    const diff = targetAmount - oldAmount;
 
-      await this.dataSource.transaction(async (manager) => {
-        await this.saveWorkingAttachments(manager, id, attachments, attachmentTypes);
-      });
-    }
+    await this.dataSource.transaction(async (manager) => {
+      const orders = manager.getRepository(Order);
+      const users = manager.getRepository(Users);
+      const transactions = manager.getRepository(Transaction);
 
-    return this.findOne(id);
+      if (diff !== 0) {
+        const clientUser = await this.findNotificationUser(
+          currentOrder.createdby,
+        );
+
+        if (clientUser) {
+          const currentBalance = Number(clientUser.wallete_balance ?? 0);
+
+          if (diff > 0 && currentBalance < diff) {
+            throw new BadRequestException(
+              `You do not have enough wallet balance to upgrade this order ETA. Additional balance required: ${diff} credits. Current balance: ${currentBalance} credits.`,
+            );
+          }
+
+          const newBalance = currentBalance - diff;
+          await users.update(clientUser.id, {
+            wallete_balance: newBalance,
+          });
+
+          const absDiff = Math.abs(diff);
+          const isDebit = diff > 0;
+          const nextTxId = await getNextNumericId(transactions);
+
+          await transactions.save(
+            transactions.create({
+              id: nextTxId,
+              amount: absDiff,
+              transaction_id: isDebit
+                ? `ORDER-UPDATE-DEBIT-${currentOrder.id}`
+                : `ORDER-UPDATE-REFUND-${currentOrder.id}`,
+              createdby:
+                clientUser.username ||
+                clientUser.email ||
+                currentOrder.createdby,
+              created_date: new Date(),
+              status: 'Approved',
+              mode: isDebit ? 'Debit' : 'Credit',
+              credits: isDebit ? 0 : absDiff,
+              paymentid: null,
+              orderid: `${currentOrder.id}`,
+            }),
+          );
+        }
+      }
+
+      await orders.update(Number(id), payload);
+
+      if (attachments.length) {
+        const attachmentTypes = Array.isArray(dto.attachmentTypes)
+          ? dto.attachmentTypes
+          : dto.attachmentTypes
+            ? [dto.attachmentTypes]
+            : [];
+
+        await this.saveWorkingAttachments(
+          manager,
+          id,
+          attachments,
+          attachmentTypes,
+        );
+      }
+    });
+
+    const updatedOrder = await this.findOne(id);
+
+    await this.sendOrderEmail({
+      order: updatedOrder,
+      subject: `Order Edited - File #${updatedOrder.id} - ${updatedOrder.subject_address ?? ''}`,
+      html: `
+    <div>
+      <p>
+        Hello ${updatedOrder.createdby},
+
+        <br/><br/>
+
+        Your appraisal order has been successfully updated.
+
+        <br/><br/>
+
+        File #${updatedOrder.id}
+
+        <br/><br/>
+
+        Address:
+        ${updatedOrder.subject_address ?? ''}
+
+        <br/><br/>
+
+        Your requested changes have been saved successfully.
+
+      </p>
+
+      <p>
+        Thank you,
+
+        <br/><br/>
+
+        <b>Backbone Data Solutions Team</b>
+
+        <br/>
+
+        +1 (760) 376-5994
+      </p>
+    </div>
+  `,
+    });
+
+    return updatedOrder;
   }
 
   async submitFeedback(
@@ -747,32 +1077,54 @@ export class OrderService {
     body: { feedback?: string; feedback_rating?: number | string },
   ) {
     const order = await this.ensureOrderAccess(id, user);
+
     const feedback = `${body.feedback ?? ''}`.trim();
     const feedbackRating = this.toNullableNumber(body.feedback_rating);
 
-    if (!feedback) {
-      throw new BadRequestException('Feedback is required');
+    // Require either feedback text or rating
+    if (!feedback && feedbackRating == null) {
+      throw new BadRequestException('Please provide feedback or a rating.');
     }
 
     if ((order.status ?? '').trim().toLowerCase() !== 'completed') {
       throw new BadRequestException(
-        "The feedback can't submitted as this is not completed order",
+        "The feedback can't be submitted because this order is not completed.",
       );
     }
 
+    const isFirstFeedback = !(order.feedback || '').trim() && (order.feedback_rating == null || Number(order.feedback_rating) === 0);
+
     await this.orderRepo.update(order.id, {
-      feedback,
-      feedback_rating: feedbackRating ?? order.feedback_rating,
+      feedback: feedback || null,
+      feedback_rating: feedbackRating,
       modify_date: new Date(),
       modifyby: user.username || user.email || `${user.id}`,
     });
 
+    if (isFirstFeedback) {
+      const dbUser = await this.userRepo.findOne({ where: { id: user.id } });
+      if (dbUser) {
+        await this.userRepo.update(user.id, {
+          feedback_points: Number(dbUser.feedback_points || 0) + 1,
+        });
+
+        await this.pointsService.logPointTransaction({
+          user_id: user.id,
+          points_change: 1,
+          type: 'EARNED',
+          description: `Earned 1 point from feedback on order #${order.id}`,
+          order_id: Number(order.id),
+        });
+      }
+    }
+
     const updatedOrder = await this.findOne(id);
     const propAdd = updatedOrder.subject_address || '';
+
     const supportEmail =
-      process.env.SMTP_NOTIFY_TO ||
+      process.env.SMTP_ORDER_NOTIFY_TO ||
       process.env.SMTP_FROM ||
-      process.env.SMTP_USER ;
+      process.env.SMTP_USER;
 
     const smtpConfigured = Boolean(
       process.env.SMTP_HOST &&
@@ -780,23 +1132,77 @@ export class OrderService {
         process.env.SMTP_PASSWORD,
     );
 
-    if (smtpConfigured) {
-      await emailTransporter.sendMail({
-        from: process.env.SMTP_FROM || process.env.SMTP_USER,
-        to: supportEmail,
-        subject: `Feedback for file #${updatedOrder.id} - ${propAdd}`,
-        html: `<div><p>Hello Team,<br /><br />File #-${updatedOrder.id}<br /><br />Feedback-${feedback}<br /><br />Message from-${user.username || user.email || updatedOrder.createdby}<br /><br /></p><p>Thank you,<br /><br /><b>Backbone Data Solutions Team</b><br /><b>+1 (760) 376-5994</b></p></div>`,
-      });
+    // Notify support
+    if (smtpConfigured && supportEmail) {
+      try {
+        await emailTransporter.sendMail({
+          from: process.env.SMTP_FROM || process.env.SMTP_USER,
+          to: supportEmail,
+          subject: `Feedback for file #${updatedOrder.id} - ${propAdd}`,
+          html: `
+          <div>
+            <p>
+              Hello Team,<br /><br />
+              File #: ${updatedOrder.id}<br /><br />
+              Rating: ${feedbackRating ?? 'N/A'}<br />
+              Feedback: ${feedback || 'N/A'}<br /><br />
+              Message from: ${
+                user.username || user.email || updatedOrder.createdby
+              }
+            </p>
+
+            <p>
+              Thank you,<br /><br />
+              <b>Backbone Data Solutions Team</b><br />
+              <b>+1 (760) 376-5994</b>
+            </p>
+          </div>
+        `,
+        });
+      } catch (err) {
+        console.error('Failed to send support email:', err);
+      }
     }
 
-    await this.sendOrderEmail({
-      order: updatedOrder,
-      subject: `Feedback for file #${updatedOrder.id} - ${propAdd}`,
-      html: `<div><p>Hello,<br /><br />Thank you for sharing valuable feedback. Our management will review and get back to you as soon as possible.<br /><br /></p><p>Thank you,<br /><br /><b>Backbone Data Solutions Team</b><br /><b>+1 (760) 376-5994</b></p></div>`,
-    });
+    const pointsMessage = isFirstFeedback 
+      ? `
+          <p>
+            <strong>1 Review Point</strong> has been added to your account under the &ldquo;Feedback Points&rdquo; section on your dashboard page.<br /><br />
+            <em>Note: Once you reach 10 points, you can redeem them for your website wallet balance.</em>
+          </p>
+        ` 
+      : '';
+
+    // Notify customer (only if recipient exists)
+    try {
+      await this.sendOrderEmail({
+        order: updatedOrder,
+        subject: `Feedback for file #${updatedOrder.id} - ${propAdd}`,
+        html: `
+        <div style="font-family: Arial, sans-serif; line-height: 1.5; color: #333;">
+          <p>
+            Hello,<br /><br />
+            Thank you for sharing your valuable feedback. Our management will review it and get back to you if necessary.
+          </p>
+          ${pointsMessage}
+          <p>
+            Please review your account and let us know if you have any questions.<br /><br />
+            Thank you for your business. We look forward to continuing our relationship.
+          </p>
+          <p>
+            Best regards,<br /><br />
+            <b>Backbone Data Solutions Team</b><br />
+            <b>+1 (760) 376-5994</b>
+          </p>
+        </div>
+      `,
+      });
+    } catch (err) {
+      console.error('Failed to send customer email:', err);
+    }
 
     return {
-      message: 'Thanx for providing your valuable feedback',
+      message: 'Thanks for providing your valuable feedback.',
       order: updatedOrder,
     };
   }
@@ -810,18 +1216,27 @@ export class OrderService {
       throw new NotFoundException(`Download with id ${downloadId} not found`);
     }
 
+    const order = await this.findOne(`${row.order_id}`);
+
     if ((user.role ?? '').toLowerCase() === 'client') {
-      const order = await this.findOne(`${row.order_id}`);
       const identifiers = [user.username, user.email, `${user.id}`]
         .map((value) => `${value ?? ''}`.trim().toLowerCase())
         .filter(Boolean);
 
-      if (!identifiers.includes(`${order.createdby ?? ''}`.trim().toLowerCase())) {
+      if (
+        !identifiers.includes(`${order.createdby ?? ''}`.trim().toLowerCase())
+      ) {
         throw new ForbiddenException('You do not have access to this document');
       }
     }
 
     await this.downloadRepo.delete(Number(downloadId));
+
+    await this.sendOrderEmail({
+      order,
+      subject: `Attachment Deleted File #${order.id} - ${order.subject_address ?? ''}`,
+      html: `<div><p>Hello ${order.createdby || 'Client'},<br/><br/>A working attachment was deleted from your order.<br/><br/>File #${order.id}<br/><br/>Address: ${order.subject_address ?? ''}</p><p>Thank you,<br/><br/><b>Backbone Data Solutions Team</b><br/><b>+1 (760) 376-5994</b></p></div>`,
+    });
 
     return { message: 'Document deleted successfully' };
   }
@@ -983,7 +1398,10 @@ export class OrderService {
       modify_date: new Date(),
     });
 
-    if (dto.reply?.trim() && dto.reply.trim() !== `${currentOrder.reply ?? ''}`.trim()) {
+    if (
+      dto.reply?.trim() &&
+      dto.reply.trim() !== `${currentOrder.reply ?? ''}`.trim()
+    ) {
       await this.chatRepo.save(
         this.chatRepo.create({
           order_id: currentOrder.id,
@@ -1012,7 +1430,9 @@ export class OrderService {
       .map((value) => `${value ?? ''}`.trim().toLowerCase())
       .filter(Boolean);
 
-    if (!identifiers.includes(`${order.createdby ?? ''}`.trim().toLowerCase())) {
+    if (
+      !identifiers.includes(`${order.createdby ?? ''}`.trim().toLowerCase())
+    ) {
       throw new ForbiddenException('You do not have access to this order');
     }
 

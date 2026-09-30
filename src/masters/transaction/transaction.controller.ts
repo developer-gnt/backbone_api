@@ -7,8 +7,11 @@ import {
   Patch,
   Post,
   Query,
+  Res,
   UseGuards,
 } from '@nestjs/common';
+
+import { Response } from 'express';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { TransactionService } from './transaction.service';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
@@ -23,7 +26,7 @@ import { Public } from 'src/public-strategy';
 @UseGuards(JwtAuthGuard)
 @Controller('masters/transaction')
 export class TransactionController {
-  constructor(private readonly transactionService: TransactionService) {}
+  constructor(private readonly transactionService: TransactionService) { }
 
   @Post()
   @ApiOperation({ summary: 'Create a pending transaction history record' })
@@ -45,6 +48,53 @@ export class TransactionController {
     },
   ) {
     return this.transactionService.createCheckoutOrder(body);
+  }
+
+  @Post('paypal/create')
+  @ApiOperation({ summary: 'Create PayPal payment for wallet credits' })
+  createPaypalPayment(
+    @CurrentUser() user: Users,
+    @Body() body: { credits: number },
+  ) {
+    return this.transactionService.createPaypalTransaction(
+      user,
+      Number(body.credits),
+    );
+  }
+
+  @Public()
+  @Get('paypal/success')
+  async paypalSuccess(
+    @Query('transactionId') transactionId: string,
+    @Query('token') token: string,
+    @Res() res: Response,
+  ) {
+    try {
+      await this.transactionService.completePaypalTransaction(
+        Number(transactionId),
+        token,
+      );
+
+      return res.redirect(
+        `${process.env.FRONTEND_URL}/payment-success?status=success`,
+      );
+    } catch (error) {
+      console.error(error);
+
+      return res.redirect(
+        `${process.env.FRONTEND_URL}/payment-success?status=failed`,
+      );
+    }
+  }
+
+  @Public()
+  @Get('paypal/cancel')
+  paypalCancel(
+    @Res() res: Response,
+  ) {
+    return res.redirect(
+      `${process.env.FRONTEND_URL}/payment-success?status=cancel`,
+    );
   }
 
   @Post('checkout-verify')

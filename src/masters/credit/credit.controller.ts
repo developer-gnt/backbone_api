@@ -6,26 +6,38 @@ import {
   Patch,
   Post,
   UseGuards,
+  ForbiddenException,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CreditService } from './credit.service';
-import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
+import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../../auth/guards/roles.guard';
+import { Roles } from '../../auth/decorators/roles.decorator';
+import { Role } from '../../auth/enums/role.enum';
 import { CreateCreditDto } from './dto/create-credit.dto';
 import { UpdateCreditDto } from './dto/update-credit.dto';
-import { CurrentUser } from 'src/auth/decorators/current-user-decorator';
-import { Users } from 'src/user/entities/user.entity';
+import { CurrentUser } from '../../auth/decorators/current-user-decorator';
+import { Users } from '../../user/entities/user.entity';
 
 @ApiTags('Master Wallet')
 @ApiBearerAuth('access-token')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('masters/wallet')
 export class CreditController {
   constructor(private readonly creditService: CreditService) {}
 
   @Post('credit')
+  @Roles(Role.ADMIN, Role.SUB_ADMIN)
   @ApiOperation({ summary: 'Add manual bonus credit to wallet' })
   create(@CurrentUser() user: Users, @Body() dto: CreateCreditDto) {
     return this.creditService.addCredit(dto);
+  }
+
+  @Post('deduct')
+  @Roles(Role.ADMIN, Role.SUB_ADMIN)
+  @ApiOperation({ summary: 'Manually deduct credit from wallet' })
+  deduct(@CurrentUser() user: Users, @Body() dto: CreateCreditDto) {
+    return this.creditService.deductCredit(dto);
   }
 
   @Post('package')

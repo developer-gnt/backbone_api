@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Delete,
+  ForbiddenException,
   Get,
   Param,
   Patch,
@@ -135,7 +136,11 @@ export class OrderController {
       assigner_name?: string;
       status?: string;
     },
+    @CurrentUser() user: Users,
   ) {
+    if (user.role?.toLowerCase() === 'supervisor') {
+      throw new ForbiddenException('Admin can only assign supervisor');
+    }
     return this.orderService.assignSupervisor(
       id,
       body.assigned_supervisor,
@@ -154,7 +159,11 @@ export class OrderController {
       assigner_name?: string;
       status?: string;
     },
+    @CurrentUser() user: Users,
   ) {
+    if (user.role?.toLowerCase() !== 'supervisor' && user.role?.toLowerCase() !== 'admin') {
+      throw new ForbiddenException('Only Supervisor or Admin can assign team member');
+    }
     return this.orderService.assignTeamMember(
       id,
       body.assigned_team_member,

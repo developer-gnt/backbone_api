@@ -8,6 +8,7 @@ import { Transaction } from './entity/transaction.entity';
 import { Users } from 'src/user/entities/user.entity';
 import { getNextNumericId } from 'src/utils/manual-id.util';
 import { emailTransporter } from 'src/packages/nodemailer/transporter';
+import { PaypalService } from 'src/paypal/paypal.service';
 
 @Injectable()
 export class TransactionService {
@@ -53,12 +54,13 @@ export class TransactionService {
       from: process.env.SMTP_FROM || process.env.SMTP_USER,
       to,
       cc: this.splitEmails(user.cc),
-      bcc: Array.from(
-        new Set([
-          ...this.splitEmails(user.bcc),
-          process.env.SMTP_NOTIFY_TO || process.env.SMTP_FROM || process.env.SMTP_USER,
-        ].filter(Boolean)),
-      ),
+      bcc: this.splitEmails(user.bcc),
+      // bcc: Array.from(
+      //   new Set([
+      //     ...this.splitEmails(user.bcc),
+      //     process.env.SMTP_PAYPAL_NOTIFY_TO || process.env.SMTP_FROM || process.env.SMTP_USER,
+      //   ].filter(Boolean)),
+      // ),
       subject: 'Backbone Data Solutions-Credits Loaded',
       html: `<div><p>Hello ${name}!!,<br/><br/>Thank you for purchasing credits and your request has been successfully processed.<br/><br/>The available balance is ${updatedBalance} credits.<br/><br/>Thank you for your business!!</p><p>Thank you,<br/><br/><b>Backbone Data Solutions Team</b><br/><b>+1 (760) 376-5994</b></p></div>`,
     });
@@ -70,7 +72,9 @@ export class TransactionService {
     @InjectRepository(Users)
     private readonly userRepo: Repository<Users>,
     private readonly dataSource: DataSource,
-  ) {}
+    private readonly paypalService: PaypalService,
+
+  ) { }
 
   async createCheckoutOrder(body: {
     amount?: string | number;
@@ -103,17 +107,17 @@ export class TransactionService {
 
     const payload = (await response.json().catch(() => null)) as
       | {
-          id?: string;
-          amount?: number;
-          currency?: string;
-          error?: { description?: string };
-        }
+        id?: string;
+        amount?: number;
+        currency?: string;
+        error?: { description?: string };
+      }
       | null;
 
     if (!response.ok || !payload?.id) {
       throw new BadRequestException(
         payload?.error?.description ||
-          'Unable to create the Razorpay checkout order.',
+        'Unable to create the Razorpay checkout order.',
       );
     }
 
@@ -268,5 +272,108 @@ export class TransactionService {
       message: 'Transaction is deleted',
       data: transaction,
     };
+  }
+
+
+  async createPaypalTransaction(
+    user: Users,
+    credits: number,
+  ) {
+    if (!credits || credits <= 0) {
+      throw new BadRequestException('Invalid credit amount');
+    }
+
+    const nextId = await getNextNumericId(this.transactionRepo);
+
+    const transaction = this.transactionRepo.create({
+      id: nextId,
+      amount: credits,
+      credits,
+      transaction_id: '0',
+      createdby: user.username,
+      created_date: new Date(),
+      status: 'Pending',
+      mode: 'Credit',
+      paymentid: null,
+      orderid: null,
+    });
+
+    await this.transactionRepo.save(transaction);
+
+    const paypalOrder =
+      await this.paypalService.createOrder(
+        credits,
+        transaction.id,
+      );
+
+    transaction.paymentid = paypalOrder.paymentId;
+    transaction.orderid = paypalOrder.paymentId;
+
+    await this.transactionRepo.save(transaction);
+
+    return {
+      transactionId: transaction.id,
+      approvalUrl: paypalOrder.approvalUrl,
+    };
+  }
+
+
+  async completePaypalTransaction(
+    transactionId: number,
+    paypalOrderId: string,
+  ) {
+    const transaction = await this.transactionRepo.findOne({
+      where: { id: transactionId },
+    });
+
+    if (!transaction) {
+      throw new NotFoundException('Transaction not found');
+    }
+
+    if (transaction.status === 'Success') {
+      return transaction;
+    }
+
+    const capture =
+      await this.paypalService.captureOrder(paypalOrderId);
+
+    if (capture.status !== 'COMPLETED') {
+      throw new BadRequestException('Payment not completed');
+    }
+
+    const user = await this.userRepo.findOne({
+      where: {
+        username: transaction.createdby,
+      },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    const updatedBalance =
+      Number(user.wallete_balance || 0) +
+      Number(transaction.credits || 0);
+
+    await this.userRepo.update(user.id, {
+      wallete_balance: updatedBalance,
+    });
+
+    transaction.status = 'Success';
+
+    transaction.paymentid =
+      capture.purchase_units[0]
+        .payments.captures[0].id;
+
+    await this.transactionRepo.save(transaction);
+
+    try {
+      await this.sendCreditLoadedEmail(
+        user,
+        updatedBalance,
+      );
+    } catch { }
+
+    return transaction;
   }
 }

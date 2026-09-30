@@ -24,9 +24,23 @@ import { AlertAvailabilityModule } from './masters/alert-availability/alert-avai
 import { OrderModule } from './masters/order/order.module';
 import { ReportModule } from './masters/report/report.module';
 import { TatPricingModule } from './masters/tat-pricing/tat-pricing.module';
+import { Inspection26Module } from './masters/inspection26/inspection26.module';
+import { Inspection36Module } from './masters/inspection36/inspection36.module';
+import { APP_GUARD } from '@nestjs/core';
+import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
+import { RolesGuard } from './packages/authorization/roles.guard';
+import { PaypalModule } from './paypal/paypal.module';
+import { MulterModule } from '@nestjs/platform-express';
 
 @Module({
   imports: [
+
+    MulterModule.register({
+      limits: {
+        fileSize: 2 * 1024 * 1024 * 1024,
+        files: 200,
+      },
+    }),
     ConfigModule.forRoot({
       isGlobal: true,
       load: [typeorm],
@@ -37,6 +51,7 @@ import { TatPricingModule } from './masters/tat-pricing/tat-pricing.module';
       useFactory: async (configService: ConfigService) =>
         configService.get('typeorm'),
     }),
+    PaypalModule,
     RolesModule,
     UserModule,
     AuthModule,
@@ -53,8 +68,24 @@ import { TatPricingModule } from './masters/tat-pricing/tat-pricing.module';
     TatPricingModule,
     OrderModule,
     ReportModule,
+    Inspection26Module,
+    Inspection36Module,
   ],
   controllers: [AppController, PdfController, ExcelController],
-  providers: [AppService, PdfService, ExcelService],
+  providers: [
+    AppService,
+    PdfService,
+    ExcelService,
+
+    // {
+    //   provide: APP_GUARD,
+    //   useClass: JwtAuthGuard,
+    // },
+
+    // {
+    //   provide: APP_GUARD,
+    //   useClass: RolesGuard,
+    // },
+  ],
 })
-export class AppModule {}
+export class AppModule { }
