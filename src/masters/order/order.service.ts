@@ -229,53 +229,6 @@ export class OrderService {
         );
       }
 
-      await this.sendOrderEmail({
-        order: savedOrder,
-        subject: `New Order File #${savedOrder.id} - ${savedOrder.subject_address ?? ''}`,
-        html: `
-    <div>
-      <p>
-        Hello ${savedOrder.createdby},
-        <br/><br/>
-
-        Thank you for placing your order with Backbone Data Solutions.
-
-        <br/><br/>
-
-        File #${savedOrder.id}
-
-        <br/><br/>
-
-        Address:
-        ${savedOrder.subject_address ?? ''}
-
-        <br/><br/>
-
-        
-
-        <br/><br/>
-
-        We have successfully received your appraisal order.
-        Our team has started processing it.
-
-      </p>
-
-      <p>
-        Thank you,
-
-        <br/><br/>
-
-        <b>Backbone Data Solutions Team</b>
-
-        <br/>
-
-        +1 (760) 376-5994
-      </p>
-
-    </div>
-  `,
-      });
-
       return {
         message: 'Order created successfully',
         wallete_balance: updatedBalance,
