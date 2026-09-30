@@ -4,7 +4,7 @@ export class CreatePointTransactions1787150788295 implements MigrationInterface 
 
     public async up(queryRunner: QueryRunner): Promise<void> {
         await queryRunner.query(`
-            CREATE TABLE point_transactions (
+            CREATE TABLE IF NOT EXISTS point_transactions (
                 id SERIAL PRIMARY KEY,
                 user_id INT NOT NULL,
                 points_change INT NOT NULL,

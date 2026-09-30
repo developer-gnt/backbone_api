@@ -4,7 +4,7 @@ export class Inspection36Tables1784999070129 implements MigrationInterface {
 
     public async up(queryRunner: QueryRunner): Promise<void> {
         await queryRunner.query(`
-            CREATE TABLE "tbl_inspection36" (
+            CREATE TABLE IF NOT EXISTS "tbl_inspection36" (
                 "id" uuid NOT NULL DEFAULT uuid_generate_v4(),
                 "created_by" integer,
                 "created_on" bigint,

@@ -8,10 +8,10 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { mkdir, writeFile } from 'fs/promises';
 import { join } from 'path';
 import { DataSource, EntityManager, In, Repository } from 'typeorm';
-import { Users } from 'src/user/entities/user.entity';
-import { getNextNumericId } from 'src/utils/manual-id.util';
+import { Users } from '../../user/entities/user.entity';
+import { getNextNumericId } from '../../utils/manual-id.util';
 import { Transaction } from '../transaction/entity/transaction.entity';
-import { emailTransporter } from 'src/packages/nodemailer/transporter';
+import { emailTransporter } from '../../packages/nodemailer/transporter';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
 import { ChatMessage } from './entity/chat-message.entity';
@@ -150,7 +150,10 @@ export class OrderService {
         created_date: now,
         order_type: dto.order_type?.trim() || null,
         reoform: dto.reoform?.trim() || null,
-        non_uad: dto.non_uad?.trim() || null,
+        non_uad:
+          dto.non_uad?.trim() ||
+          (dto.uad_version?.trim() === 'NON UAD' ? 'Yes' : 'No'),
+        uad_version: dto.uad_version?.trim() || null,
         financing: dto.financing?.trim() || null,
         borrower_name: dto.borrower_name?.trim() || null,
         subject_address: dto.subject_address?.trim() || null,
@@ -228,9 +231,14 @@ export class OrderService {
       'Client';
     const address = result.order.subject_address || '';
 
+    const uadVersion = `${result.order.uad_version ?? ''}`.trim();
+    const uadPrefix =
+      uadVersion && uadVersion !== 'NON UAD' ? `${uadVersion} ` : '';
+    const subject = `${uadPrefix}New Order File #${result.order.id} - ${address}`;
+
     await this.sendOrderEmail({
       order: result.order,
-      subject: `New Order File #${result.order.id} - ${address}`,
+      subject,
       html: `<div><p>Hello ${clientName},<br/><br/>Thank you for placing your order with Backbone Data Solutions.<br/><br/>File #${result.order.id}<br/><br/>Address: ${address}<br/><br/>We have successfully received your appraisal order. Our team has started processing it.<br/><br/></p><p>Thank you,<br/><br/><b>Backbone Data Solutions Team</b><br/><b>+1 (760) 376-5994</b></p></div>`,
     });
 

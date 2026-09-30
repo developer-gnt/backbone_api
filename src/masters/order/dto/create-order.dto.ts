@@ -82,6 +82,11 @@ export class CreateOrderDto {
   @IsString()
   non_uad?: string;
 
+  @ApiPropertyOptional({ example: 'UAD 2.6' })
+  @IsOptional()
+  @IsString()
+  uad_version?: string;
+
   @ApiPropertyOptional({ example: 'John Borrower' })
   @IsOptional()
   @IsString()

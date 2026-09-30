@@ -77,6 +77,9 @@ export class Order {
   @Column({ type: 'varchar', length: 100, nullable: true })
   non_uad: string;
 
+  @Column({ type: 'varchar', length: 50, nullable: true })
+  uad_version: string;
+
   @Column({ type: 'varchar', length: 100, nullable: true })
   financing: string;
 

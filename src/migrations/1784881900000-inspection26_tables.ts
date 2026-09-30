@@ -4,11 +4,8 @@ export class Inspection26Tables1784881900000 implements MigrationInterface {
     name = 'Inspection26Tables1784881900000'
 
     public async up(queryRunner: QueryRunner): Promise<void> {
-        // Drop the old single table if it exists
-        await queryRunner.query(`DROP TABLE IF EXISTS "tbl_inspection26" CASCADE`);
-
         // 1. Master Table
-        await queryRunner.query(`CREATE TABLE "tbl_inspection26" (
+        await queryRunner.query(`CREATE TABLE IF NOT EXISTS "tbl_inspection26" (
             "id" uuid NOT NULL DEFAULT uuid_generate_v4(), 
             "client_id" uuid NOT NULL, 
             "address" varchar, 
