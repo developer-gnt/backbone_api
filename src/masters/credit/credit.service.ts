@@ -91,7 +91,6 @@ export class CreditService {
     await emailTransporter.sendMail({
       from: process.env.SMTP_FROM || process.env.SMTP_USER,
       to: recipient,
-      bcc: process.env.SMTP_NOTIFY_TO || '',
       subject: 'Congratulations💥- Credits Added',
       html,
     });
@@ -347,15 +346,6 @@ export class CreditService {
       return { previewMode: true, sent: false };
     }
 
-    const cc = `${payload.user.cc ?? ''}`
-      .split(',')
-      .map((item) => item.trim())
-      .filter(Boolean);
-    const bcc = `${payload.user.bcc ?? ''}`
-      .split(',')
-      .map((item) => item.trim())
-      .filter(Boolean);
-
     const safeName = this.escapeHtml(
       `${payload.user.firstname ?? ''} ${payload.user.lastname ?? ''}`.trim() ||
       payload.user.username ||
@@ -365,11 +355,6 @@ export class CreditService {
     await emailTransporter.sendMail({
       from: process.env.SMTP_FROM || process.env.SMTP_USER,
       to,
-      cc: cc.length ? cc : undefined,
-      bcc: [
-        ...bcc,
-        process.env.SMTP_ORDER_NOTIFY_TO || process.env.SMTP_FROM || process.env.SMTP_USER,
-      ].filter(Boolean),
       subject: 'Backbone Data Solutions-Credits Loaded',
       html: `
         <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #1f2937;">

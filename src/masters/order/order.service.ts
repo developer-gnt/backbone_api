@@ -132,6 +132,10 @@ export class OrderService {
       throw new BadRequestException('Subject address is required');
     }
 
+    if (!`${dto.uad_version ?? ''}`.trim()) {
+      throw new BadRequestException('UAD Version selection is required');
+    }
+
     if (walletOwner && debitAmount > Number(walletOwner.wallete_balance ?? 0)) {
       throw new BadRequestException(
         'You do not have enough wallet balance to place this order',
