@@ -3,6 +3,7 @@ import {
   ForbiddenException,
   Injectable,
   NotFoundException,
+  OnModuleInit,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { mkdir, writeFile } from 'fs/promises';
@@ -23,7 +24,7 @@ import { TatPricingService } from '../tat-pricing/tat-pricing.service';
 import { PointsService } from '../points/points.service';
 
 @Injectable()
-export class OrderService {
+export class OrderService implements OnModuleInit {
   constructor(
     @InjectRepository(Order)
     private readonly orderRepo: Repository<Order>,
@@ -41,6 +42,35 @@ export class OrderService {
     private readonly pointsService: PointsService,
     private readonly dataSource: DataSource,
   ) {}
+
+  async onModuleInit() {
+    try {
+      await this.orderRepo.query(`
+        DO $$
+        BEGIN
+          IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'orders') THEN
+            ALTER TABLE orders ALTER COLUMN reply TYPE TEXT;
+            ALTER TABLE orders ALTER COLUMN remark TYPE TEXT;
+            ALTER TABLE orders ALTER COLUMN description TYPE TEXT;
+            ALTER TABLE orders ALTER COLUMN message TYPE TEXT;
+            ALTER TABLE orders ALTER COLUMN emp_remark TYPE TEXT;
+            ALTER TABLE orders ALTER COLUMN completed_work TYPE TEXT;
+          END IF;
+          IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'chatsystem') THEN
+            ALTER TABLE chatsystem ALTER COLUMN message TYPE TEXT;
+            ALTER TABLE chatsystem ALTER COLUMN name TYPE VARCHAR(255);
+            ALTER TABLE chatsystem ALTER COLUMN email TYPE VARCHAR(255);
+            ALTER TABLE chatsystem ALTER COLUMN createdby TYPE VARCHAR(255);
+          END IF;
+        EXCEPTION
+          WHEN OTHERS THEN
+            NULL;
+        END $$;
+      `);
+    } catch {
+      // Ignore if columns already altered or table does not exist yet
+    }
+  }
 
   private toNullableNumber(value: unknown): number | null {
     if (value === undefined || value === null || `${value}`.trim() === '') {

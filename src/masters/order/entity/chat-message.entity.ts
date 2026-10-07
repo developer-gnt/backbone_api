@@ -8,7 +8,7 @@ export class ChatMessage {
   @PrimaryColumn({ type: 'timestamp' })
   msg_time: Date;
 
-  @PrimaryColumn({ type: 'varchar', length: 1000 })
+  @PrimaryColumn({ type: 'text' })
   message: string;
 
   @PrimaryColumn({ type: 'varchar', length: 200 })

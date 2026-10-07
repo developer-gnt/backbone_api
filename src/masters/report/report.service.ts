@@ -370,6 +370,8 @@ export class ReportService {
           assigner_name: order.assigner_name,
           assigned_supervisor: order.assigned_supervisor,
           assigned_team_member: order.assigned_team_member,
+          uad_version: order.uad_version || '',
+          non_uad: order.non_uad || '',
         };
       }),
     };

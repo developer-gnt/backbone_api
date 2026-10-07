@@ -57,14 +57,6 @@ export class AuthService {
       return { available: false, message: 'Username is required.' };
     }
 
-    if (!/^[a-zA-Z0-9]{6,10}$/.test(normalized)) {
-      return {
-        available: false,
-        message:
-          'Username must be 6 to 10 characters and contain only letters and numbers.',
-      };
-    }
-
     const existing = await this.userRepository.findOne({
       where: { username: normalized },
     });
@@ -110,12 +102,6 @@ export class AuthService {
 
     if (!payload.agreeToTerms) {
       throw new BadRequestException('Please accept the terms and privacy policy.');
-    }
-
-    if (!/^[a-zA-Z0-9]{6,10}$/.test(username)) {
-      throw new BadRequestException(
-        'Username must be 6 to 10 characters and contain only letters and numbers.',
-      );
     }
 
     const existingUser = await this.userRepository.findOne({
