@@ -6,9 +6,10 @@ import {
   OnModuleInit,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { existsSync } from 'fs';
 import { mkdir, writeFile } from 'fs/promises';
 import { join } from 'path';
-import { DataSource, EntityManager, In, Repository } from 'typeorm';
+import { DataSource, EntityManager, ILike, In, Repository } from 'typeorm';
 import { Users } from '../../user/entities/user.entity';
 import { getNextNumericId } from '../../utils/manual-id.util';
 import { Transaction } from '../transaction/entity/transaction.entity';
@@ -468,8 +469,8 @@ export class OrderService implements OnModuleInit {
     }
 
     const whereConditions: any[] = [
-      { email: normalized },
-      { username: normalized },
+      { email: ILike(normalized) },
+      { username: ILike(normalized) },
     ];
 
     if (/^\d+$/.test(normalized)) {
@@ -496,28 +497,14 @@ export class OrderService implements OnModuleInit {
     attachments?: Array<{ filename?: string; path: string }>;
   }) {
     try {
-      // console.log('========== ORDER EMAIL ==========');
-      // console.log('Order ID:', options.order.id);
-      // console.log('Created By:', options.order.createdby);
-
       const client = await this.findNotificationUser(options.order.createdby);
 
-      // console.log('Client Found:', client);
-
       const to = new Set<string>();
-
-      let clientCc = '';
-      let clientBcc = '';
 
       if (client) {
         const sendmail = `${client.sendmail ?? ''}`.trim().toLowerCase();
 
-        // console.log('Raw Sendmail:', client.sendmail);
-        // console.log('Normalized Sendmail:', sendmail);
-        // console.log('Primary Email:', client.email);
-        // console.log('Alternate Email:', client.altmail);
-
-        // Add primary email unless sendmail is explicitly "no"
+        // Add primary client email unless sendmail is explicitly "no"
         if (client.email && sendmail !== 'no') {
           this.splitEmails(client.email).forEach((email) => to.add(email));
         }
@@ -526,52 +513,50 @@ export class OrderService implements OnModuleInit {
         if (!to.size && client.altmail) {
           this.splitEmails(client.altmail).forEach((email) => to.add(email));
         }
-
-        clientCc = client.cc ?? '';
-        clientBcc = client.bcc ?? '';
       } else {
         console.warn(
           `No client found for createdby = ${options.order.createdby}`,
         );
       }
 
-      // Extra recipients
-      this.splitEmails(options.extraEmails).forEach((email) => to.add(email));
-      this.splitEmails(process.env.SMTP_ORDER_NOTIFY_TO).forEach((email) => to.add(email));
+      // Shoot SMTP_ORDER_NOTIFY_TO
+      this.splitEmails(process.env.SMTP_ORDER_NOTIFY_TO).forEach((email) =>
+        to.add(email),
+      );
 
-      // Remove duplicates
-      const toList = Array.from(new Set(Array.from(to)));
-      const ccList = Array.from(new Set(this.splitEmails(clientCc)));
-      const bccList = Array.from(new Set(this.splitEmails(clientBcc)));
+      // Optional extra recipients if specified on complete
+      if (options.extraEmails) {
+        this.splitEmails(options.extraEmails).forEach((email) => to.add(email));
+      }
 
-      if (!toList.length && !ccList.length && !bccList.length) {
-        console.warn('No recipients found. Email skipped.');
+      const toList = Array.from(to);
+
+      if (!toList.length) {
+        console.warn('[Order Email] No recipients found. Email skipped.');
         return;
       }
 
       const mailOptions = {
         from: process.env.SMTP_FROM || process.env.SMTP_USER,
         to: toList,
-        cc: ccList.length ? ccList : undefined,
-        bcc: bccList.length ? bccList : undefined,
         subject: options.subject,
         html: options.html,
         attachments: options.attachments,
       };
 
-      const info = await emailTransporter.sendMail(mailOptions);
+      console.log(
+        `[Order Email] Sending "${options.subject}" to:`,
+        toList,
+      );
 
-      // console.log('========== SMTP RESPONSE ==========');
-      // console.log('Accepted:', info.accepted);
-      // console.log('Rejected:', info.rejected);
-      // console.log('Pending:', info.pending);
-      // console.log('Envelope:', info.envelope);
-      // console.log('Message ID:', info.messageId);
-      // console.log('Response:', info.response);
+      const info = await emailTransporter.sendMail(mailOptions);
+      console.log(
+        `[Order Email] Sent successfully. Message ID: ${info?.messageId}`,
+      );
 
       // Verify expected recipients
-      const expectedRecipients = [...toList, ...ccList, ...bccList];
-      const acceptedRecipients = (info.accepted || []).map((email) =>
+      const expectedRecipients = [...toList];
+      const acceptedRecipients = (info?.accepted || []).map((email: any) =>
         String(email).toLowerCase(),
       );
 
@@ -580,7 +565,10 @@ export class OrderService implements OnModuleInit {
       );
 
       if (missingRecipients.length) {
-        console.warn('Recipients not accepted by SMTP:', missingRecipients);
+        console.warn(
+          '[Order Email] Recipients not accepted by SMTP:',
+          missingRecipients,
+        );
       }
     } catch (error) {
       console.error('[Order email notification failed]', error);
@@ -816,7 +804,8 @@ export class OrderService implements OnModuleInit {
           .map((item) => ({
             filename: item.filename || undefined,
             path: join(process.cwd(), `${item.filepath}`.replace(/^\/+/, '')),
-          })),
+          }))
+          .filter((att) => existsSync(att.path)),
       });
     }
 
