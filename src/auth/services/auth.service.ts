@@ -57,6 +57,20 @@ export class AuthService {
       return { available: false, message: 'Username is required.' };
     }
 
+    if (normalized.length < 3) {
+      return {
+        available: false,
+        message: 'Username must be at least 3 characters long.',
+      };
+    }
+
+    if (normalized.length > 30) {
+      return {
+        available: false,
+        message: 'Username cannot exceed 30 characters.',
+      };
+    }
+
     const existing = await this.userRepository.findOne({
       where: { username: normalized },
     });
@@ -104,13 +118,24 @@ export class AuthService {
       throw new BadRequestException('Please accept the terms and privacy policy.');
     }
 
+    if (username.length < 3) {
+      throw new BadRequestException(
+        'Username must be at least 3 characters long.',
+      );
+    }
+
+    if (username.length > 30) {
+      throw new BadRequestException('Username cannot exceed 30 characters.');
+    }
+
     const existingUser = await this.userRepository.findOne({
       where: [{ email }, { username }],
     });
 
     if (existingUser) {
+      const isUsernameMatch = existingUser.username === username;
       throw new BadRequestException(
-        existingUser.username === username
+        isUsernameMatch
           ? 'Username already exists.'
           : 'Email address already exists.',
       );

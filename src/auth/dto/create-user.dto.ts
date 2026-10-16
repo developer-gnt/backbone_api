@@ -3,7 +3,9 @@ import {
   IsNumber,
   IsOptional,
   IsString,
+  MaxLength,
   Min,
+  MinLength,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
@@ -39,10 +41,12 @@ export class CreateUserDto {
   email?: string;
 
   @ApiProperty({
-    example: 'john.doe',
-    description: 'Unique username for client/employee login.',
+    example: 'Brock123',
+    description: 'Unique username for client/employee login (minimum 3 characters).',
   })
   @IsString()
+  @MinLength(3, { message: 'Username must be at least 3 characters long.' })
+  @MaxLength(30, { message: 'Username cannot exceed 30 characters.' })
   username: string;
 
   @ApiPropertyOptional({ example: '9876543210' })
