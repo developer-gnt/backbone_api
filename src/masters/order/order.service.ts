@@ -513,10 +513,6 @@ export class OrderService implements OnModuleInit {
         if (!to.size && client.altmail) {
           this.splitEmails(client.altmail).forEach((email) => to.add(email));
         }
-      } else {
-        console.warn(
-          `No client found for createdby = ${options.order.createdby}`,
-        );
       }
 
       // Shoot SMTP_ORDER_NOTIFY_TO
@@ -532,7 +528,6 @@ export class OrderService implements OnModuleInit {
       const toList = Array.from(to);
 
       if (!toList.length) {
-        console.warn('[Order Email] No recipients found. Email skipped.');
         return;
       }
 
@@ -544,39 +539,9 @@ export class OrderService implements OnModuleInit {
         attachments: options.attachments,
       };
 
-      console.log(
-        `[Order Email] Sending "${options.subject}" to:`,
-        toList,
-      );
-
-      const info = await emailTransporter.sendMail(mailOptions);
-      console.log(
-        `[Order Email] Sent successfully. Message ID: ${info?.messageId}`,
-      );
-
-      // Verify expected recipients
-      const expectedRecipients = [...toList];
-      const acceptedRecipients = (info?.accepted || []).map((email: any) =>
-        String(email).toLowerCase(),
-      );
-
-      const missingRecipients = expectedRecipients.filter(
-        (email) => !acceptedRecipients.includes(email.toLowerCase()),
-      );
-
-      if (missingRecipients.length) {
-        console.warn(
-          '[Order Email] Recipients not accepted by SMTP:',
-          missingRecipients,
-        );
-      }
-    } catch (error: any) {
-      console.error('[Order email notification failed]', {
-        message: error?.message,
-        code: error?.code,
-        response: error?.response,
-        stack: error?.stack,
-      });
+      await emailTransporter.sendMail(mailOptions);
+    } catch (error) {
+      console.error('[Order email notification failed]', error);
     }
   }
 
