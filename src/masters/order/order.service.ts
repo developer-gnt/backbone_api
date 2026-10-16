@@ -570,8 +570,13 @@ export class OrderService implements OnModuleInit {
           missingRecipients,
         );
       }
-    } catch (error) {
-      console.error('[Order email notification failed]', error);
+    } catch (error: any) {
+      console.error('[Order email notification failed]', {
+        message: error?.message,
+        code: error?.code,
+        response: error?.response,
+        stack: error?.stack,
+      });
     }
   }
 
