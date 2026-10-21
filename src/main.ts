@@ -61,7 +61,13 @@ async function bootstrap() {
     },
   });
 
-  await app.listen(port, '0.0.0.0');
+  const server = await app.listen(port, '0.0.0.0');
+  // Configure HTTP server timeouts (15 minutes) for large uploads
+  if (server && typeof server.setTimeout === 'function') {
+    server.setTimeout(900000);
+    server.keepAliveTimeout = 65000;
+    server.headersTimeout = 66000;
+  }
   console.log(`Backbone API running on http://localhost:${port}`);
   console.log(`Swagger docs ready at http://localhost:${port}/api`);
 }

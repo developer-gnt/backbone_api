@@ -56,6 +56,20 @@ export class OrderService implements OnModuleInit {
             ALTER TABLE orders ALTER COLUMN message TYPE TEXT;
             ALTER TABLE orders ALTER COLUMN emp_remark TYPE TEXT;
             ALTER TABLE orders ALTER COLUMN completed_work TYPE TEXT;
+            ALTER TABLE orders ALTER COLUMN standard_instruction TYPE TEXT;
+            ALTER TABLE orders ALTER COLUMN order_type_comment TYPE TEXT;
+            ALTER TABLE orders ALTER COLUMN subject_address TYPE TEXT;
+            ALTER TABLE orders ALTER COLUMN feedback TYPE TEXT;
+            ALTER TABLE orders ALTER COLUMN filename TYPE VARCHAR(255);
+            ALTER TABLE orders ALTER COLUMN borrower_name TYPE VARCHAR(255);
+          END IF;
+          IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'downloads') THEN
+            CREATE INDEX IF NOT EXISTS idx_downloads_id ON downloads(id);
+            CREATE INDEX IF NOT EXISTS idx_downloads_order_id ON downloads(order_id);
+          END IF;
+          IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'completeddownloads') THEN
+            CREATE INDEX IF NOT EXISTS idx_completeddownloads_id ON completeddownloads(id);
+            CREATE INDEX IF NOT EXISTS idx_completeddownloads_order_id ON completeddownloads(order_id);
           END IF;
           IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'chatsystem') THEN
             ALTER TABLE chatsystem ALTER COLUMN message TYPE TEXT;
@@ -285,10 +299,13 @@ export class OrderService implements OnModuleInit {
       uadVersion && uadVersion !== 'NON UAD' ? `${uadVersion} ` : '';
     const subject = `${uadPrefix}New Order File #${result.order.id} - ${address}`;
 
-    await this.sendOrderEmail({
+    // Send confirmation email in background without blocking or timing out the HTTP response
+    this.sendOrderEmail({
       order: result.order,
       subject,
       html: `<div><p>Hello ${clientName},<br/><br/>Thank you for placing your order with Backbone Data Solutions.<br/><br/>File #${result.order.id}<br/><br/>Address: ${address}<br/><br/>We have successfully received your appraisal order. Our team has started processing it.<br/><br/></p><p>Thank you,<br/><br/><b>Backbone Data Solutions Team</b><br/><b>+1 (760) 376-5994</b></p></div>`,
+    }).catch((err) => {
+      console.error('[Order email send error]', err);
     });
 
     return result;
@@ -573,9 +590,12 @@ export class OrderService implements OnModuleInit {
     const rows: Download[] = [];
 
     for (const [index, file] of attachments.entries()) {
-      const safeName = this.sanitizeFilename(file.originalname);
+      const baseName = this.sanitizeFilename(file.originalname);
+      const safeName = attachments.length > 1 ? `${index + 1}_${baseName}` : baseName;
       const targetPath = join(uploadDir, safeName);
-      await writeFile(targetPath, file.buffer);
+      if (file.buffer) {
+        await writeFile(targetPath, file.buffer);
+      }
 
       rows.push(
         downloads.create({
