@@ -17,7 +17,7 @@ Built with scalability and security in mind, the platform provides role-based ac
 * **Order Management** — Create, track, and manage inspection orders with full lifecycle support from initial submission through completion and delivery to clients
 * **Team Assignment & Workflow** — Assign orders to supervisors and team members with status tracking, enabling clear accountability and work management
 * **Order Collaboration** — Enable client-team communication through built-in messaging for each order, facilitating clarifications and updates without leaving the platform
-* **Attachment Management** — Support large file uploads (up to 2GB) for order documentation, working files, and completed deliverables with organized storage
+* **Attachment Management** — Support large file uploads (up to 3GB) for order documentation, working files, and completed deliverables with organized storage
 * **Flexible Pricing & Packages** — Define and manage multiple service packages with customizable pricing, TAT (turnaround time) options, and client-specific pricing configurations
 * **Payment Processing** — Process client payments securely through PayPal integration with transaction tracking and payment status management
 * **Comprehensive Reporting** — Generate detailed reports on order performance, team productivity, attendance, website access logs, and financial transactions
@@ -99,7 +99,7 @@ The main workflow for order management follows this flow:
 | **Order Lifecycle Management** | Create, assign, track, and complete inspection orders with status workflow |
 | **Role-Based Access Control** | Support admin, supervisor, and team member roles with appropriate permissions |
 | **Messaging & Collaboration** | Client-team communication within order context for transparent collaboration |
-| **Large File Support** | Accept and manage order attachments up to 2GB with organized storage |
+| **Large File Support** | Accept and manage order attachments up to 3GB with organized storage |
 | **Custom Packages & Pricing** | Define service packages with configurable pricing and turnaround options |
 | **Payment Processing** | Secure PayPal integration for client payments with transaction tracking |
 | **Reporting & Analytics** | Generate reports on orders, team performance, attendance, and finances |

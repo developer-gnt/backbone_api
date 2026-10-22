@@ -11,13 +11,13 @@ async function bootstrap() {
 
   app.use(
     bodyParser.json({
-      limit: '2gb',
+      limit: '3gb',
     }),
   );
 
   app.use(
     bodyParser.urlencoded({
-      limit: '2gb',
+      limit: '3gb',
       extended: true,
     }),
   );
